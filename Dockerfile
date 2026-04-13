@@ -1,8 +1,5 @@
 FROM alpine
-ENV PATH="/app/bin:${PATH}"
-EXPOSE 55477/tcp
-EXPOSE 55477/udp
-RUN apk add g++ make openssl-dev ncurses-dev
+RUN apk add g++ make openssl-dev openssl-libs-static ncurses-dev ncurses-static musl-dev zlib-static
 COPY . /app
-RUN make -C /app -j$(nproc)
-CMD ["cbftp"]
+WORKDIR /app
+CMD ["sh", "-c", "make -j$(nproc) LINKFLAGS='-static -lssl -lcrypto -lpthread -lncurses'"]

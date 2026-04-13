@@ -241,7 +241,7 @@ void ProxySession::received(char* data, int datalen) {
         errormessage = "Malformed response on authentication request";
         break;
       }
-      if (data[0] != PROXYSESSION_AUTH_VERSION) {
+      if (data[0] != PROXYSESSION_AUTH_VERSION && data[0] != PROXYSESSION_SOCKSVERSION) {
         state = PROXYSESSION_ERROR;
         errormessage = "Invalid authentication version";
         break;
