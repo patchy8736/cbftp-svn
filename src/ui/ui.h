@@ -4,6 +4,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "../core/eventreceiver.h"
@@ -78,6 +79,9 @@ class TransferPairingScreen;
 class ExternalScriptsScreen;
 class TransferJobsFilterScreen;
 class SpreadJobsFilterScreen;
+class MirrorJobsScreen;
+class EditMirrorJobScreen;
+class MirrorSectionPathsScreen;
 
 class LegendPrinterKeybinds;
 struct TransferFilteringParameters;
@@ -145,6 +149,9 @@ private:
   std::shared_ptr<ExternalScriptsScreen> externalscriptsscreen;
   std::shared_ptr<TransferJobsFilterScreen> transferjobsfilterscreen;
   std::shared_ptr<SpreadJobsFilterScreen> spreadjobsfilterscreen;
+  std::shared_ptr<MirrorJobsScreen> mirrorjobsscreen;
+  std::shared_ptr<EditMirrorJobScreen> editmirrorjobscreen;
+  std::shared_ptr<MirrorSectionPathsScreen> mirrorsectionpathsscreen;
   std::shared_ptr<LegendPrinterKeybinds> legendprinterkeybinds;
   unsigned int mainrow;
   unsigned int col;
@@ -294,6 +301,11 @@ public:
   void goMetrics();
   void goTransferPairing(TransferPairing* transferpairing);
   void goExternalScripts(ExternalScripts* externalscripts, const std::string& description);
+  void goMirrorJobs();
+  void goAddMirrorJob();
+  void goEditMirrorJob(int id);
+  void goMirrorSectionPaths(const std::list<std::string>& sections,
+                            const std::unordered_map<std::string, std::string>& sectionlocalpaths);
   void returnSelectItems(const std::string &);
   void key(const std::string &);
   void newKey(const std::string &);
@@ -311,4 +323,3 @@ public:
   void removeKeyBinds(KeyBinds* keybinds);
   bool isTop(const UIWindow* window) const;
 };
-

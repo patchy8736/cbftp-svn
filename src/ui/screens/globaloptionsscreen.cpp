@@ -252,6 +252,7 @@ void GlobalOptionsScreen::initialize(unsigned int row, unsigned int col) {
   mso.addIntArrow(y++, x, "ulslots", "Max local upload slots:", ls->getMaxUploadSlots(), 1, 64);
   y++;
   mso.addTextButtonNoContent(y++, x, "skiplist", "Configure skiplist...");
+  mso.addTextButtonNoContent(y++, x, "mirrorjobs", "Configure mirror jobs...");
   mso.addTextButtonNoContent(y++, x, "proxy", "Configure proxy settings...");
   mso.addTextButtonNoContent(y++, x, "fileviewer", "Configure file viewing...");
   mso.addTextButtonNoContent(y++, x, "globalkeybinds", "Configure global keybinds...");
@@ -344,6 +345,10 @@ bool GlobalOptionsScreen::keyPressed(unsigned int ch) {
       }
       if (msoe->getIdentifier() == "proxy") {
         ui->goProxy();
+        return true;
+      }
+      if (msoe->getIdentifier() == "mirrorjobs") {
+        ui->goMirrorJobs();
         return true;
       }
       if (msoe->getIdentifier() == "fileviewer") {

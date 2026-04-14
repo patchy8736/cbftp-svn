@@ -25,7 +25,7 @@ void GlobalContext::linkComponents(SettingsLoaderSaver* sls, Engine* e,
     Statistics* s,
     SectionManager* secm, HTTPServer* httpsrv, RestApi* ra,
     LoadMonitor* lm, ExternalScriptsManager* esm, SubProcessManager* spm,
-    LogManager* logm)
+    LogManager* logm, MirrorManager* mm)
 {
   this->sls = sls;
   this->e = e;
@@ -45,6 +45,7 @@ void GlobalContext::linkComponents(SettingsLoaderSaver* sls, Engine* e,
   this->esm = esm;
   this->spm = spm;
   this->logm = logm;
+  this->mm = mm;
 }
 
 Engine* GlobalContext::getEngine() const {
@@ -139,3 +140,6 @@ LogManager* GlobalContext::getLogManager() const {
   return logm;
 }
 
+MirrorManager* GlobalContext::getMirrorManager() const {
+  return mm;
+}

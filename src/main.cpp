@@ -29,6 +29,7 @@
 #include "externalscriptsmanager.h"
 #include "subprocessmanager.h"
 #include "logmanager.h"
+#include "mirrormanager.h"
 
 namespace {
 
@@ -67,11 +68,14 @@ public:
     ExternalScriptsManager* esm = new ExternalScriptsManager();
     SubProcessManager* spm = new SubProcessManager();
     LogManager* logm = new LogManager();
+    MirrorManager* mm = new MirrorManager();
 
     UIBase* uibase = UIBase::instance();
 
     global->linkComponents(sls, e, uibase, sm, slm, tm, rch, sl, pm, ls,
-                           s, secm, httprv, ra, lm, esm, spm, logm);
+                           s, secm, httprv, ra, lm, esm, spm, logm, mm);
+
+    mm->init();
 
     Core::Threading::setCurrentThreadName("cbftp");
 
@@ -100,5 +104,4 @@ int main(int argc, char* argv[]) {
 
   Main();
 }
-
 

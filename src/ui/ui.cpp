@@ -70,6 +70,9 @@
 #include "screens/externalscriptsscreen.h"
 #include "screens/transferjobsfilterscreen.h"
 #include "screens/spreadjobsfilterscreen.h"
+#include "screens/mirrorjobsscreen.h"
+#include "screens/editmirrorjobscreen.h"
+#include "screens/mirrorsectionpathsscreen.h"
 
 namespace {
 
@@ -179,6 +182,9 @@ bool Ui::init() {
   externalscriptsscreen = std::make_shared<ExternalScriptsScreen>(this);
   transferjobsfilterscreen = std::make_shared<TransferJobsFilterScreen>(this);
   spreadjobsfilterscreen = std::make_shared<SpreadJobsFilterScreen>(this);
+  mirrorjobsscreen = std::make_shared<MirrorJobsScreen>(this);
+  editmirrorjobscreen = std::make_shared<EditMirrorJobScreen>(this);
+  mirrorsectionpathsscreen = std::make_shared<MirrorSectionPathsScreen>(this);
   mainwindows.push_back(mainscreen);
   mainwindows.push_back(newkeyscreen);
   mainwindows.push_back(confirmationscreen);
@@ -222,6 +228,9 @@ bool Ui::init() {
   mainwindows.push_back(metricsscreen);
   mainwindows.push_back(transferpairingscreen);
   mainwindows.push_back(externalscriptsscreen);
+  mainwindows.push_back(mirrorjobsscreen);
+  mainwindows.push_back(editmirrorjobscreen);
+  mainwindows.push_back(mirrorsectionpathsscreen);
 
   legendprinterkeybinds = std::make_shared<LegendPrinterKeybinds>(this);
   legendwindow->setMainLegendPrinter(legendprinterkeybinds);
@@ -955,6 +964,28 @@ void Ui::goGlobalKeyBinds() {
 void Ui::goMetrics() {
   metricsscreen->initialize(mainrow, col);
   switchToWindow(metricsscreen);
+}
+
+void Ui::goMirrorJobs() {
+  mirrorjobsscreen->initialize(mainrow, col);
+  switchToWindow(mirrorjobsscreen);
+}
+
+void Ui::goAddMirrorJob() {
+  editmirrorjobscreen->initialize(mainrow, col);
+  switchToWindow(editmirrorjobscreen);
+}
+
+void Ui::goEditMirrorJob(int id) {
+  editmirrorjobscreen->initialize(mainrow, col, id);
+  switchToWindow(editmirrorjobscreen);
+}
+
+void Ui::goMirrorSectionPaths(const std::list<std::string>& sections,
+                              const std::unordered_map<std::string, std::string>& sectionlocalpaths)
+{
+  mirrorsectionpathsscreen->initialize(mainrow, col, sections, sectionlocalpaths);
+  switchToWindow(mirrorsectionpathsscreen);
 }
 
 void Ui::goTransferPairing(TransferPairing* transferpairing) {

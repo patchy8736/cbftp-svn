@@ -32,6 +32,7 @@ SelectSitesScreen::SelectSitesScreen(Ui* ui) : UIWindow(ui, "SelectSitesScreen")
 void SelectSitesScreen::initializeExclude(unsigned int row, unsigned int col, const std::string & purpose, std::list<std::shared_ptr<Site> > preselectedsites, std::list<std::shared_ptr<Site> > excludedsites) {
   sm = global->getSiteManager();
   this->purpose = purpose;
+  tempsites.clear();
   std::set<std::shared_ptr<Site> > preselected;
   std::set<std::shared_ptr<Site> > excluded;
   for (std::list<std::shared_ptr<Site> >::iterator it = preselectedsites.begin(); it != preselectedsites.end(); it++) {
@@ -57,6 +58,7 @@ void SelectSitesScreen::initializeExclude(unsigned int row, unsigned int col, co
 void SelectSitesScreen::initializeSelect(unsigned int row, unsigned int col, const std::string & purpose, std::list<std::shared_ptr<Site> > preselectedsites, std::list<std::shared_ptr<Site> > sites) {
   sm = global->getSiteManager();
   this->purpose = purpose;
+  tempsites.clear();
   std::set<std::shared_ptr<Site> > preselected;
   for (std::list<std::shared_ptr<Site> >::iterator it = preselectedsites.begin(); it != preselectedsites.end(); it++) {
     preselected.insert(*it);

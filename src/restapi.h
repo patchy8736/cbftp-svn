@@ -83,6 +83,16 @@ private:
   void handleSectionGet(RestApiCallback* cb, int connrequestid, const http::Request& request);
   void handleSectionPatch(RestApiCallback* cb, int connrequestid, const http::Request& request);
   void handleSectionDelete(RestApiCallback* cb, int connrequestid, const http::Request& request);
+  void handleMirrorJobsGet(RestApiCallback* cb, int connrequestid, const http::Request& request);
+  void handleMirrorJobPost(RestApiCallback* cb, int connrequestid, const http::Request& request);
+  void handleMirrorJobGet(RestApiCallback* cb, int connrequestid, const http::Request& request);
+  void handleMirrorJobPatch(RestApiCallback* cb, int connrequestid, const http::Request& request);
+  void handleMirrorJobDelete(RestApiCallback* cb, int connrequestid, const http::Request& request);
+  void handleMirrorJobScan(RestApiCallback* cb, int connrequestid, const http::Request& request);
+  void handleMirrorJobSeenGet(RestApiCallback* cb, int connrequestid, const http::Request& request);
+  void handleMirrorJobSeenReset(RestApiCallback* cb, int connrequestid, const http::Request& request);
+  void handleMirrorStateGet(RestApiCallback* cb, int connrequestid, const http::Request& request);
+  void handleMirrorStatePost(RestApiCallback* cb, int connrequestid, const http::Request& request);
   std::list<OngoingRequest> ongoingrequests;
   int nextrequestid;
   std::map<Path, std::map<std::string, EndpointPointer>> endpoints;

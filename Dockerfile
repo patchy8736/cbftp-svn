@@ -1,4 +1,4 @@
-FROM alpine
+FROM alpine:3.19
 RUN apk add g++ make openssl-dev openssl-libs-static ncurses-dev ncurses-static musl-dev zlib-static
 COPY . /app
 WORKDIR /app

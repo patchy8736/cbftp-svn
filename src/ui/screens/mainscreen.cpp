@@ -20,6 +20,7 @@
 #include "../../sectionmanager.h"
 #include "../../section.h"
 #include "../../hourlyalltracking.h"
+#include "../../mirrormanager.h"
 
 #include "../menuselectoptioncheckbox.h"
 #include "../ui.h"
@@ -54,7 +55,8 @@ enum KeyActions {
   KEYACTION_ALL_TRANSFERS,
   KEYACTION_FORCE_DISCONNECT_ALL_SLOTS,
   KEYACTION_DISCONNECT_ALL_SLOTS,
-  KEYACTION_REMOVE_SITE_FROM_ALL_SPREADJOBS
+  KEYACTION_REMOVE_SITE_FROM_ALL_SPREADJOBS,
+  KEYACTION_TOGGLE_MIRROR_RUNTIME
 };
 
 enum KeyScopes {
@@ -132,6 +134,7 @@ MainScreen::MainScreen(Ui* ui) : UIWindow(ui, "MainScreen"), msop(*vv), msosj(*v
   keybinds.addBind('S', KEYACTION_SNAKE, "Snake");
   keybinds.addBind('o', KEYACTION_SCOREBOARD, "Scoreboard");
   keybinds.addBind('m', KEYACTION_METRICS, "Metrics");
+  keybinds.addBind('M', KEYACTION_TOGGLE_MIRROR_RUNTIME, "Toggle mirror runtime");
   keybinds.addBind(KEY_UP, KEYACTION_UP, "Navigate up");
   keybinds.addBind(KEY_DOWN, KEYACTION_DOWN, "Navigate down");
   keybinds.addBind(KEY_PPAGE, KEYACTION_PREVIOUS_PAGE, "Previous page");
@@ -546,6 +549,11 @@ bool MainScreen::keyPressed(unsigned int ch) {
     case KEYACTION_METRICS:
       ui->goMetrics();
       return true;
+    case KEYACTION_TOGGLE_MIRROR_RUNTIME:
+      global->getMirrorManager()->toggleRuntimeEnabled();
+      ui->setInfo();
+      ui->redraw();
+      return true;
     case KEYACTION_ALL_SPREAD_JOBS:
       ui->goAllSpreadJobs();
       return true;
@@ -818,6 +826,7 @@ std::string MainScreen::getInfoText() const {
     }
     text += "  ";
   }
+  text += std::string("Mirror runtime: ") + (global->getMirrorManager()->getRuntimeEnabled() ? "ON" : "OFF") + "  ";
   return text + activeracestext + activejobstext + numsitestext;
 }
 

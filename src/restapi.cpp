@@ -25,6 +25,7 @@
 #include "globalcontext.h"
 #include "loadmonitor.h"
 #include "localstorage.h"
+#include "mirrormanager.h"
 #include "path.h"
 #include "race.h"
 #include "racestatus.h"
@@ -459,6 +460,127 @@ nlohmann::json jsonSection(const Section& section) {
   sec["num_jobs"] = section.getNumJobs();
   sec["skiplist"] = jsonSkipList(section.getSkipList());
   return sec;
+}
+
+nlohmann::json jsonMirrorJob(const MirrorJob& job, bool summary = false) {
+  nlohmann::json j;
+  nlohmann::json spreadsites = nlohmann::json::array();
+  nlohmann::json sections = nlohmann::json::array();
+  for (const std::string& site : job.spreadsites) {
+    spreadsites.push_back(site);
+  }
+  for (const std::string& section : job.sections) {
+    sections.push_back(section);
+  }
+  j["id"] = job.id;
+  j["name"] = job.name;
+  j["enabled"] = job.enabled;
+  j["monitor_site"] = job.monitorsite;
+  j["target_site"] = job.targetsite;
+  j["spread_sites"] = spreadsites;
+  j["sections"] = sections;
+  j["profile"] = MirrorManager::profileToString(job.profile);
+  j["poll_interval_seconds"] = job.pollintervalseconds;
+  j["release_name_pattern"] = job.releasenamepattern;
+  j["min_release_age_seconds"] = job.minreleaseageseconds;
+  j["create_done_file"] = job.createdonefile;
+  j["send_rpu_webhook"] = job.sendrpuwebhook;
+  j["rpu_webhook_url"] = job.rpuwebhookurl;
+  nlohmann::json sectionlocalpaths;
+  for (const std::pair<const std::string, std::string>& mapitem : job.sectionlocalpaths) {
+    sectionlocalpaths[mapitem.first] = mapitem.second;
+  }
+  j["section_local_paths"] = sectionlocalpaths;
+  j["seeded"] = job.seeded;
+  j["time_created_epoch"] = job.createdepoch;
+  j["time_updated_epoch"] = job.updatedepoch;
+  j["last_scan_epoch"] = job.lastscanepoch;
+  j["last_error"] = job.lasterror;
+  j["scan_running"] = job.scanning;
+  j["scan_seen"] = job.scanseen;
+  j["scan_triggered"] = job.scantriggered;
+  j["scan_skipped"] = job.scanskipped;
+  if (!summary) {
+    unsigned long long int seenentries = 0;
+    unsigned long long int triggeredentries = 0;
+    for (std::unordered_map<std::string, std::unordered_map<std::string, MirrorSeenRelease> >::const_iterator sit = job.seenreleases.begin(); sit != job.seenreleases.end(); ++sit) {
+      for (std::unordered_map<std::string, MirrorSeenRelease>::const_iterator rit = sit->second.begin(); rit != sit->second.end(); ++rit) {
+        ++seenentries;
+        if (rit->second.triggered) {
+          ++triggeredentries;
+        }
+      }
+    }
+    j["stats"]["seen_total"] = seenentries;
+    j["stats"]["triggered_total"] = triggeredentries;
+    j["stats"]["skipped_total"] = seenentries >= triggeredentries ? seenentries - triggeredentries : 0;
+  }
+  return j;
+}
+
+util::Result updateMirrorJob(MirrorJob* job, const nlohmann::json& jsondata) {
+  for (nlohmann::json::const_iterator it = jsondata.begin(); it != jsondata.end(); ++it) {
+    if (it.key() == "name") {
+      job->name = it.value();
+    }
+    else if (it.key() == "enabled") {
+      job->enabled = it.value();
+    }
+    else if (it.key() == "monitor_site") {
+      job->monitorsite = it.value();
+    }
+    else if (it.key() == "target_site") {
+      job->targetsite = it.value();
+    }
+    else if (it.key() == "spread_sites") {
+      job->spreadsites.clear();
+      for (nlohmann::json::const_iterator listit = it.value().begin(); listit != it.value().end(); ++listit) {
+        job->spreadsites.push_back(*listit);
+      }
+    }
+    else if (it.key() == "sections") {
+      job->sections.clear();
+      for (nlohmann::json::const_iterator listit = it.value().begin(); listit != it.value().end(); ++listit) {
+        job->sections.push_back(*listit);
+      }
+    }
+    else if (it.key() == "profile") {
+      MirrorProfile profile;
+      util::Result result = MirrorManager::stringToProfile(it.value(), &profile);
+      if (!result.success) {
+        return result;
+      }
+      job->profile = profile;
+    }
+    else if (it.key() == "poll_interval_seconds") {
+      job->pollintervalseconds = it.value();
+    }
+    else if (it.key() == "release_name_pattern") {
+      job->releasenamepattern = it.value();
+    }
+    else if (it.key() == "min_release_age_seconds") {
+      job->minreleaseageseconds = it.value();
+    }
+    else if (it.key() == "create_done_file") {
+      job->createdonefile = it.value();
+    }
+    else if (it.key() == "send_rpu_webhook") {
+      job->sendrpuwebhook = it.value();
+    }
+    else if (it.key() == "rpu_webhook_url") {
+      job->rpuwebhookurl = it.value();
+    }
+    else if (it.key() == "section_local_paths") {
+      job->sectionlocalpaths.clear();
+      for (nlohmann::json::const_iterator mapit = it.value().begin(); mapit != it.value().end(); ++mapit) {
+        job->sectionlocalpaths[mapit.key()] = mapit.value();
+      }
+    }
+    else {
+      return util::Result(false, "Unrecognized key: " + it.key());
+    }
+  }
+  return util::Result(true);
 }
 
 int stringToSkiplistScope(const std::string& scope) {
@@ -964,6 +1086,16 @@ RestApi::RestApi() : nextrequestid(0), notifyoncurrentrequest(false) {
   endpoints["/sections/*"]["GET"] = &RestApi::handleSectionGet;
   endpoints["/sections/*"]["PATCH"] = &RestApi::handleSectionPatch;
   endpoints["/sections/*"]["DELETE"] = &RestApi::handleSectionDelete;
+  endpoints["/mirrorjobs"]["GET"] = &RestApi::handleMirrorJobsGet;
+  endpoints["/mirrorjobs"]["POST"] = &RestApi::handleMirrorJobPost;
+  endpoints["/mirrorjobs/*"]["GET"] = &RestApi::handleMirrorJobGet;
+  endpoints["/mirrorjobs/*"]["PATCH"] = &RestApi::handleMirrorJobPatch;
+  endpoints["/mirrorjobs/*"]["DELETE"] = &RestApi::handleMirrorJobDelete;
+  endpoints["/mirrorjobs/*/scan"]["POST"] = &RestApi::handleMirrorJobScan;
+  endpoints["/mirrorjobs/*/seen"]["GET"] = &RestApi::handleMirrorJobSeenGet;
+  endpoints["/mirrorjobs/*/seen/reset"]["POST"] = &RestApi::handleMirrorJobSeenReset;
+  endpoints["/mirror/state"]["GET"] = &RestApi::handleMirrorStateGet;
+  endpoints["/mirror/state"]["POST"] = &RestApi::handleMirrorStatePost;
   endpoints["/spreadjobs"]["POST"] = &RestApi::handleSpreadJobPost;
   endpoints["/spreadjobs"]["GET"] = &RestApi::handleSpreadJobsGet;
   endpoints["/spreadjobs/*"]["GET"] = &RestApi::handleSpreadJobGet;
@@ -2091,6 +2223,203 @@ void RestApi::handleSectionDelete(RestApiCallback* cb, int connrequestid, const 
   Path path = request.getPath();
   std::string sectionname = path.level(1).toString();
   global->getSectionManager()->removeSection(sectionname);
+  http::Response response(204);
+  response.appendHeader("Content-Length", "0");
+  cb->requestHandled(connrequestid, response);
+}
+
+void RestApi::handleMirrorJobsGet(RestApiCallback* cb, int connrequestid, const http::Request& request) {
+  nlohmann::json j = nlohmann::json::array();
+  for (std::map<int, MirrorJob>::const_iterator it = global->getMirrorManager()->getJobs().begin();
+      it != global->getMirrorManager()->getJobs().end(); ++it)
+  {
+    j.push_back(jsonMirrorJob(it->second, true));
+  }
+  http::Response response(200);
+  std::string jsondump = j.dump(2);
+  response.setBody(std::vector<char>(jsondump.begin(), jsondump.end()));
+  response.addHeader("Content-Type", "application/json");
+  cb->requestHandled(connrequestid, response);
+}
+
+void RestApi::handleMirrorJobPost(RestApiCallback* cb, int connrequestid, const http::Request& request) {
+  nlohmann::json jsondata = getJsonFromBody(request);
+  MirrorJob job;
+  util::Result update = updateMirrorJob(&job, jsondata);
+  if (!update.success) {
+    cb->requestHandled(connrequestid, badRequestResponse(update.error));
+    return;
+  }
+  int id = -1;
+  util::Result result = global->getMirrorManager()->addJob(job, &id);
+  if (!result.success) {
+    cb->requestHandled(connrequestid, badRequestResponse(result.error));
+    return;
+  }
+  nlohmann::json j;
+  j["id"] = id;
+  http::Response response(201);
+  std::string jsondump = j.dump(2);
+  response.setBody(std::vector<char>(jsondump.begin(), jsondump.end()));
+  response.addHeader("Content-Type", "application/json");
+  cb->requestHandled(connrequestid, response);
+}
+
+void RestApi::handleMirrorJobGet(RestApiCallback* cb, int connrequestid, const http::Request& request) {
+  Path path = request.getPath();
+  int id = std::stoi(path.level(1).toString());
+  const MirrorJob* job = global->getMirrorManager()->getJob(id);
+  if (!job) {
+    cb->requestHandled(connrequestid, notFoundResponse());
+    return;
+  }
+  nlohmann::json j = jsonMirrorJob(*job);
+  http::Response response(200);
+  std::string jsondump = j.dump(2);
+  response.setBody(std::vector<char>(jsondump.begin(), jsondump.end()));
+  response.addHeader("Content-Type", "application/json");
+  cb->requestHandled(connrequestid, response);
+}
+
+void RestApi::handleMirrorJobPatch(RestApiCallback* cb, int connrequestid, const http::Request& request) {
+  Path path = request.getPath();
+  int id = std::stoi(path.level(1).toString());
+  const MirrorJob* existing = global->getMirrorManager()->getJob(id);
+  if (!existing) {
+    cb->requestHandled(connrequestid, notFoundResponse());
+    return;
+  }
+  MirrorJob updated = *existing;
+  nlohmann::json jsondata = getJsonFromBody(request);
+  util::Result merge = updateMirrorJob(&updated, jsondata);
+  if (!merge.success) {
+    cb->requestHandled(connrequestid, badRequestResponse(merge.error));
+    return;
+  }
+  util::Result result = global->getMirrorManager()->replaceJob(id, updated);
+  if (!result.success) {
+    cb->requestHandled(connrequestid, badRequestResponse(result.error));
+    return;
+  }
+  http::Response response(204);
+  response.appendHeader("Content-Length", "0");
+  cb->requestHandled(connrequestid, response);
+}
+
+void RestApi::handleMirrorJobDelete(RestApiCallback* cb, int connrequestid, const http::Request& request) {
+  Path path = request.getPath();
+  int id = std::stoi(path.level(1).toString());
+  if (!global->getMirrorManager()->removeJob(id)) {
+    const MirrorJob* job = global->getMirrorManager()->getJob(id);
+    if (!job) {
+      cb->requestHandled(connrequestid, notFoundResponse());
+      return;
+    }
+    cb->requestHandled(connrequestid, badRequestResponse("Can not delete mirror job while scanning", 409));
+    return;
+  }
+  http::Response response(204);
+  response.appendHeader("Content-Length", "0");
+  cb->requestHandled(connrequestid, response);
+}
+
+void RestApi::handleMirrorJobScan(RestApiCallback* cb, int connrequestid, const http::Request& request) {
+  Path path = request.getPath();
+  int id = std::stoi(path.level(1).toString());
+  MirrorScanResult result = global->getMirrorManager()->scanNow(id, true);
+  if (!result.result.success) {
+    cb->requestHandled(connrequestid, badRequestResponse(result.result.error));
+    return;
+  }
+  const MirrorJob* job = global->getMirrorManager()->getJob(id);
+  nlohmann::json j;
+  j["started"] = true;
+  j["running"] = job ? job->scanning : false;
+  j["seen"] = result.seen;
+  j["triggered"] = result.triggered;
+  j["skipped"] = result.skipped;
+  http::Response response(200);
+  std::string jsondump = j.dump(2);
+  response.setBody(std::vector<char>(jsondump.begin(), jsondump.end()));
+  response.addHeader("Content-Type", "application/json");
+  cb->requestHandled(connrequestid, response);
+}
+
+void RestApi::handleMirrorJobSeenGet(RestApiCallback* cb, int connrequestid, const http::Request& request) {
+  Path path = request.getPath();
+  int id = std::stoi(path.level(1).toString());
+  const MirrorJob* job = global->getMirrorManager()->getJob(id);
+  if (!job) {
+    cb->requestHandled(connrequestid, notFoundResponse());
+    return;
+  }
+  nlohmann::json out = nlohmann::json::array();
+  for (std::unordered_map<std::string, std::unordered_map<std::string, MirrorSeenRelease> >::const_iterator sit = job->seenreleases.begin(); sit != job->seenreleases.end(); ++sit) {
+    for (std::unordered_map<std::string, MirrorSeenRelease>::const_iterator rit = sit->second.begin(); rit != sit->second.end(); ++rit) {
+      nlohmann::json item;
+      item["section"] = sit->first;
+      item["name"] = rit->first;
+      item["first_seen_epoch"] = rit->second.firstseenepoch;
+      item["last_seen_epoch"] = rit->second.lastseenepoch;
+      item["triggered"] = rit->second.triggered;
+      item["done_file_created"] = rit->second.donefilecreated;
+      item["webhook_sent"] = rit->second.webhooksent;
+      out.push_back(item);
+    }
+  }
+  http::Response response(200);
+  std::string jsondump = out.dump(2);
+  response.setBody(std::vector<char>(jsondump.begin(), jsondump.end()));
+  response.addHeader("Content-Type", "application/json");
+  cb->requestHandled(connrequestid, response);
+}
+
+void RestApi::handleMirrorJobSeenReset(RestApiCallback* cb, int connrequestid, const http::Request& request) {
+  Path path = request.getPath();
+  int id = std::stoi(path.level(1).toString());
+  const MirrorJob* job = global->getMirrorManager()->getJob(id);
+  if (!job) {
+    cb->requestHandled(connrequestid, notFoundResponse());
+    return;
+  }
+  nlohmann::json jsondata = getJsonFromBody(request);
+  if (!jsondata.contains("section") || !jsondata.contains("name")) {
+    cb->requestHandled(connrequestid, badRequestResponse("Request body must contain 'section' and 'name'"));
+    return;
+  }
+  std::string section = jsondata["section"];
+  std::string name = jsondata["name"];
+  if (section.empty() || name.empty()) {
+    cb->requestHandled(connrequestid, badRequestResponse("'section' and 'name' must be non-empty"));
+    return;
+  }
+  if (!global->getMirrorManager()->resetSeenRelease(id, section, name)) {
+    cb->requestHandled(connrequestid, badRequestResponse("Seen release not found for requested section/name", 404));
+    return;
+  }
+  http::Response response(204);
+  response.appendHeader("Content-Length", "0");
+  cb->requestHandled(connrequestid, response);
+}
+
+void RestApi::handleMirrorStateGet(RestApiCallback* cb, int connrequestid, const http::Request&) {
+  nlohmann::json j;
+  j["enabled"] = global->getMirrorManager()->getRuntimeEnabled();
+  http::Response response(200);
+  std::string jsondump = j.dump(2);
+  response.setBody(std::vector<char>(jsondump.begin(), jsondump.end()));
+  response.addHeader("Content-Type", "application/json");
+  cb->requestHandled(connrequestid, response);
+}
+
+void RestApi::handleMirrorStatePost(RestApiCallback* cb, int connrequestid, const http::Request& request) {
+  nlohmann::json jsondata = getJsonFromBody(request);
+  if (!jsondata.contains("enabled")) {
+    cb->requestHandled(connrequestid, badRequestResponse("Missing key: enabled"));
+    return;
+  }
+  bool enabled = jsondata["enabled"];
+  global->getMirrorManager()->setRuntimeEnabled(enabled);
   http::Response response(204);
   response.appendHeader("Content-Length", "0");
   cb->requestHandled(connrequestid, response);

@@ -329,6 +329,92 @@ An example body when adding or modifying a section:
 - Delete a section
    DELETE /sections/SECTIONNAME
 
+- List all mirror jobs
+   GET /mirrorjobs
+
+- Show details for a specific mirror job
+   GET /mirrorjobs/ID
+
+- Add a mirror job
+   POST /mirrorjobs
+
+- Modify a mirror job
+   PATCH /mirrorjobs/ID
+
+Note: The monitor site is always auto-included as a source site when jobs are
+started. The target site is the destination and is never added to dlonly.
+
+An example body when adding or modifying a mirror job:
+
+{
+  "name": "mp3-pre-to-archive",
+  "enabled": true,
+  "monitor_site": "PRE_A",
+  "target_site": "ARCHIVE_1",
+  "spread_sites": [
+    "SPREAD_1",
+    "SPREAD_2"
+  ],
+  "sections": [
+    "MP3",
+    "FLAC"
+  ],
+  "profile": "DISTRIBUTE",  // (DISTRIBUTE/RACE)
+  "poll_interval_seconds": 15,
+  "release_name_pattern": "*",
+  "min_release_age_seconds": 0,
+  "create_done_file": true,
+  "send_rpu_webhook": true,
+  "rpu_webhook_url": "http://rpu:8090/api/monitor",
+  "section_local_paths": {
+    "MP3": "/mnt/local/music/scene-mp3",
+    "FLAC": "/mnt/local/music/scene-flac"
+  }
+}
+
+When create_done_file is enabled, cbftp will run `touch done.file` in the
+target release directory after the spread job is complete on target site.
+
+When send_rpu_webhook is enabled, cbftp sends the webhook only after done.file
+creation has succeeded (or directly if create_done_file is disabled).
+
+`section_local_paths` maps each section to the local category path used to build
+the webhook payload:
+
+- `category_path`: mapped local path for the section
+- `path`: `category_path` + `/` + release name
+
+- Trigger a manual scan for a mirror job
+   POST /mirrorjobs/ID/scan
+
+- List seen releases for a mirror job
+   GET /mirrorjobs/ID/seen
+
+- Reset one seen release for a mirror job (so it can be picked up again)
+   POST /mirrorjobs/ID/seen/reset
+
+- Show mirror runtime state
+   GET /mirror/state
+
+- Set mirror runtime state
+   POST /mirror/state
+
+Example body:
+
+{
+  "enabled": true
+}
+
+Example body:
+
+{
+  "section": "up-scene-movie-1080p",
+  "name": "Some.Release-2026-GRP"
+}
+
+- Delete a mirror job
+   DELETE /mirrorjobs/ID
+
 - Show various build information, stats etc
    GET /info
 

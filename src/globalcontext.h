@@ -28,6 +28,7 @@ class LoadMonitor;
 class ExternalScriptsManager;
 class SubProcessManager;
 class LogManager;
+class MirrorManager;
 
 class GlobalContext {
   private:
@@ -54,6 +55,7 @@ class GlobalContext {
     ExternalScriptsManager* esm;
     SubProcessManager* spm;
     LogManager* logm;
+    MirrorManager* mm;
   public:
     void linkCore(Core::WorkManager* wm, Core::TickPoke* tp,
                   Core::IOManager* iom);
@@ -66,7 +68,7 @@ class GlobalContext {
         Statistics* s,
         SectionManager* secm, HTTPServer* httpsrv, RestApi* ra,
         LoadMonitor* lm, ExternalScriptsManager* esm, SubProcessManager* spm,
-        LogManager* logm);
+        LogManager* logm, MirrorManager* mm);
     Engine* getEngine() const;
     SettingsLoaderSaver* getSettingsLoaderSaver() const;
     Core::WorkManager* getWorkManager() const;
@@ -90,6 +92,7 @@ class GlobalContext {
     ExternalScriptsManager* getExternalScriptsManager() const;
     SubProcessManager* getSubProcessManager() const;
     LogManager* getLogManager() const;
+    MirrorManager* getMirrorManager() const;
 };
 
 extern GlobalContext* global;
