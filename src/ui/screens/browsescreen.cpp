@@ -74,6 +74,7 @@ BrowseScreen::BrowseScreen(Ui* ui) : UIWindow(ui, "BrowseScreen"),
   sitekeybinds.addBind('F', KEYACTION_FILTER_REGEX, "Regex filter");
   sitekeybinds.addBind('g', KEYACTION_GOTO_PATH, "Go to path");
   sitekeybinds.addBind('l', KEYACTION_COMMAND_LOG, "View command log");
+  sitekeybinds.addBind('L', KEYACTION_CONNECTION_LOG, "View connection log");
   sitekeybinds.addBind(337, KEYACTION_SOFT_SELECT_UP, "Soft select up");
   sitekeybinds.addBind(336, KEYACTION_SOFT_SELECT_DOWN, "Soft select down");
   sitekeybinds.addBind(' ', KEYACTION_HARD_SELECT, "Hard select");

@@ -837,6 +837,9 @@ BrowseScreenAction BrowseScreenSite::keyPressed(unsigned int ch) {
     case KEYACTION_COMMAND_LOG:
       ui->goRawBuffer(&cwdrawbuffer, "CWD LOG: " + site->getName(), list.getPath().toString());
       break;
+    case KEYACTION_CONNECTION_LOG:
+      ui->goRawBuffer(sitelogic->getAggregatedRawBuffer(), "CONNECTION LOG: " + site->getName(), list.getPath().toString());
+      break;
     case KEYACTION_LEFT:
     case KEYACTION_RETURN:
     {
