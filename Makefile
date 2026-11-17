@@ -20,7 +20,7 @@ endif
 
 CLEAN_TARGETS = $(addprefix clean-,$(SRC_TARGETS))
 
-.PHONY: $(SRC_TARGETS) $(CLEAN_TARGETS)
+.PHONY: $(SRC_TARGETS) $(CLEAN_TARGETS) test
 
 all: $(BINS)
 
@@ -58,6 +58,12 @@ linecount:
 
 clean: $(CLEAN_TARGETS)
 	@if test -d $(BINDIR); then rm -rf $(BINDIR); echo rm -rf $(BINDIR); fi
+
+test: $(BINDIR)/racemath_test
+	./$(BINDIR)/racemath_test
+
+$(BINDIR)/racemath_test: src/racemath.cpp test/racemath_test.cpp Makefile.inc | $(BINDIR)
+	$(CXX) -o $@ $(OPTFLAGS) -std=c++11 -Wall src/racemath.cpp test/racemath_test.cpp
 
 $(CLEAN_TARGETS):
 	@+$(MAKE) -C $(@:clean-%=%) clean
