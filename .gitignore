@@ -1,2 +1,6 @@
 bin/*
-docs/*!docs/agents/
+docs/*
+!docs/agents/
+*.o
+*.d
+*.a
