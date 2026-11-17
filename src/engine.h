@@ -89,6 +89,10 @@ public:
   void setStaticTimeForCompletion(int millis);
   int getNfoPrioAfterSeconds() const;
   void setNfoPrioAfterSeconds(int seconds);
+  bool getLastFileBoost() const;
+  void setLastFileBoost(bool enabled);
+  int getLastFileBoostBonus() const;
+  void setLastFileBoostBonus(int bonus);
   unsigned int preparedRaces() const;
   unsigned int currentRaces() const;
   unsigned int allRaces() const;
@@ -190,6 +194,8 @@ public:
   float gatingfactor3;
   int statictimeforcompletion;
   int nfoprioafterseconds;
+  bool lastfileboost;
+  int lastfileboostbonus;
   int preparedraceexpirytime;
   int startnextpreparedtimeout;
   bool startnextprepared;

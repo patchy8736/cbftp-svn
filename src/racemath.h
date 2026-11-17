@@ -39,4 +39,8 @@ RaceWinSummary winSummary(const std::vector<ListingEntry>& entries, const std::s
 // True when the destination site is missing exactly one release file.
 bool lastFileBoost(unsigned int remaining_files);
 
+// Adds the bonus to the score when the boost applies: race profile with the
+// feature enabled and the destination missing exactly one release file.
+unsigned int applyLastFileBoost(unsigned int score, unsigned int bonus, bool enabled, unsigned int remaining_files);
+
 }

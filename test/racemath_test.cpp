@@ -96,5 +96,12 @@ int main() {
   assert(s7.files_lost == 1);
   assert(s7.local_completion_seconds == 0);
   assert(s7.race_won == false);
+
+  // last-file boost application: bonus only for race profile one file short, flag on
+  assert(racemath::applyLastFileBoost(9500, 10000, true, 1) == 19500);
+  assert(racemath::applyLastFileBoost(9500, 10000, true, 2) == 9500); // two files missing
+  assert(racemath::applyLastFileBoost(9500, 10000, true, 0) == 9500); // nothing missing
+  assert(racemath::applyLastFileBoost(9500, 10000, false, 1) == 9500); // flag off / other profile
+  assert(racemath::applyLastFileBoost(0, 10000, true, 1) == 10000);
   return 0;
 }

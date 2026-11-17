@@ -93,6 +93,13 @@ bool lastFileBoost(unsigned int remaining_files) {
   return remaining_files == 1;
 }
 
+unsigned int applyLastFileBoost(unsigned int score, unsigned int bonus, bool enabled, unsigned int remaining_files) {
+  if (enabled && lastFileBoost(remaining_files)) {
+    return score + bonus;
+  }
+  return score;
+}
+
 RaceWinSummary winSummary(const std::vector<ListingEntry>& entries, const std::string& username,
     long long race_start, long long completion_time, long long window_end, unsigned int expected_files) {
   RaceWinSummary summary;

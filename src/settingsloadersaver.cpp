@@ -773,6 +773,15 @@ void SettingsLoaderSaver::loadSettings() {
         global->getEngine()->setNfoPrioAfterSeconds(v);
       }
     }
+    else if (!setting.compare("lastfileboost")) {
+      global->getEngine()->setLastFileBoost(value == "true");
+    }
+    else if (!setting.compare("lastfileboostbonus")) {
+      int v;
+      if (parseIntSetting(value, v)) {
+        global->getEngine()->setLastFileBoostBonus(v);
+      }
+    }
   }
 
   dfh->getDataFor("TransferManager", &lines);
@@ -1186,6 +1195,8 @@ void SettingsLoaderSaver::saveSettings() {
     dfh->addOutputLine("Engine", "gatingfactor3=" + std::to_string(global->getEngine()->getGatingFactor(3)));
     dfh->addOutputLine("Engine", "statictimeforcompletion=" + std::to_string(global->getEngine()->getStaticTimeForCompletion()));
     dfh->addOutputLine("Engine", "nfoprioafterseconds=" + std::to_string(global->getEngine()->getNfoPrioAfterSeconds()));
+    dfh->addOutputLine("Engine", std::string("lastfileboost=") + (global->getEngine()->getLastFileBoost() ? "true" : "false"));
+    dfh->addOutputLine("Engine", "lastfileboostbonus=" + std::to_string(global->getEngine()->getLastFileBoostBonus()));
   }
   {
     dfh->addOutputLine("TransferManager", "maxtransferhistory=" + std::to_string(global->getTransferManager()->getMaxTransferHistory()));

@@ -20,6 +20,7 @@
 #include "sitelogicmanager.h"
 #include "transfermanager.h"
 #include "race.h"
+#include "racemath.h"
 #include "siterace.h"
 #include "skiplist.h"
 #include "eventlog.h"
@@ -256,6 +257,8 @@ Engine::Engine() :
   gatingfactor3(0.3),
   statictimeforcompletion(5000),
   nfoprioafterseconds(15),
+  lastfileboost(false),
+  lastfileboostbonus(10000),
   preparedraceexpirytime(120),
   startnextpreparedtimeout(300),
   startnextprepared(false),
@@ -1813,7 +1816,9 @@ unsigned short Engine::calculateScore(PrioType priotype, unsigned long long int 
   }
 
   points += getPriorityPoints(priority);
-  return points;
+  unsigned int expectedfiles = itr->getGuessedTotalNumFiles();
+  unsigned int remainingfiles = expectedfiles > fld->getSize() ? expectedfiles - fld->getSize() : 0;
+  return racemath::applyLastFileBoost(points, lastfileboostbonus, racemode && lastfileboost, remainingfiles);
 }
 
 void Engine::setSpeedScale() {
@@ -2258,6 +2263,25 @@ int Engine::getNfoPrioAfterSeconds() const {
 void Engine::setNfoPrioAfterSeconds(int seconds) {
   if (seconds >= 0) {
     nfoprioafterseconds = seconds;
+  }
+}
+
+bool Engine::getLastFileBoost() const {
+  return lastfileboost;
+}
+
+void Engine::setLastFileBoost(bool enabled) {
+  lastfileboost = enabled;
+}
+
+int Engine::getLastFileBoostBonus() const {
+  return lastfileboostbonus;
+}
+
+void Engine::setLastFileBoostBonus(int bonus) {
+  // cap: score is an unsigned short; an overflowing bonus would rank the boosted transfer last
+  if (bonus >= 0 && bonus <= 65535) {
+    lastfileboostbonus = bonus;
   }
 }
 
