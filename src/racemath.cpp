@@ -94,7 +94,7 @@ bool lastFileBoost(unsigned int remaining_files) {
 }
 
 RaceWinSummary winSummary(const std::vector<ListingEntry>& entries, const std::string& username,
-    long long race_start, long long completion_time, unsigned int expected_files) {
+    long long race_start, long long completion_time, long long window_end, unsigned int expected_files) {
   RaceWinSummary summary;
   summary.files_total = expected_files;
   summary.files_won = 0;
@@ -113,7 +113,7 @@ RaceWinSummary winSummary(const std::vector<ListingEntry>& entries, const std::s
     if (mtime < race_start) {
       mtime = parseMTime(it->lastmodified, year + 1);
     }
-    if (mtime >= race_start && mtime <= completion_time) {
+    if (mtime >= race_start && mtime <= window_end) {
       ++summary.files_lost;
       if (mtime > competitor_latest) {
         competitor_latest = mtime;

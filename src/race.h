@@ -125,6 +125,7 @@ class Race : public Core::EventReceiver, public TransferStatusCallback {
     int numSites() const;
     void updateSiteProgress(unsigned int);
     unsigned int getMaxSiteNumFilesProgress() const;
+    unsigned int getGuessedTotalNumFiles() const;
     bool isDone() const;
     std::string getTimeStamp() const;
     std::string getTimeStampFull() const;

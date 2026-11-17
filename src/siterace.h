@@ -10,6 +10,7 @@
 #include "commandowner.h"
 #include "path.h"
 #include "racestatus.h"
+#include "racemath.h"
 
 class Race;
 class FileList;
@@ -50,11 +51,14 @@ class SiteRace : public CommandOwner, public std::enable_shared_from_this<SiteRa
     unsigned int filesup;
     unsigned long long int speedup;
     bool downloadonly;
+    bool winsummarytaken;
+    racemath::RaceWinSummary winsummary;
     unsigned int id;
     void updateNumFilesUploaded(const std::shared_ptr<FileList>& fl);
     void addNewDirectories(const std::shared_ptr<FileList>& fl);
     void markNonExistent(const std::shared_ptr<FileList>& fl);
     void reset();
+    racemath::RaceWinSummary raceWinSummary(long long completion_time, long long window_end) const;
   public:
     std::string getName() const override;
     int classType() const override;
@@ -106,6 +110,8 @@ class SiteRace : public CommandOwner, public std::enable_shared_from_this<SiteRa
     unsigned long long int getSpeedUp() const;
     bool allListsRefreshed() const;
     bool isDownloadOnly() const;
+    // Snapshot taken at local completion; live computation until then.
+    racemath::RaceWinSummary getRaceWinSummary() const;
     std::unordered_map<std::string, unsigned long long int>::const_iterator sizeUpBegin() const;
     std::unordered_map<std::string, unsigned int>::const_iterator filesUpBegin() const;
     std::unordered_map<std::string, unsigned long long int>::const_iterator speedUpBegin() const;

@@ -27,6 +27,7 @@
 #include "localstorage.h"
 #include "path.h"
 #include "race.h"
+#include "racemath.h"
 #include "racestatus.h"
 #include "remotecommandhandler.h"
 #include "restapicallback.h"
@@ -1475,6 +1476,7 @@ void RestApi::handleSpreadJobGet(RestApiCallback* cb, int connrequestid, const h
   nlohmann::json sites = nlohmann::json::array();
   nlohmann::json dlonlysites = nlohmann::json::array();
   nlohmann::json incsites = nlohmann::json::array();
+  nlohmann::json sitesdata = nlohmann::json::array();
   std::set<std::pair<std::shared_ptr<SiteRace>, std::shared_ptr<SiteLogic>>>::const_iterator it;
   for (it = spreadjob->begin(); it != spreadjob->end(); ++it) {
     std::string sitename = it->first->getSiteName();
@@ -1485,6 +1487,15 @@ void RestApi::handleSpreadJobGet(RestApiCallback* cb, int connrequestid, const h
     if (it->first->getStatus() != RaceStatus::DONE) {
       incsites.push_back(sitename);
     }
+    racemath::RaceWinSummary summary = it->first->getRaceWinSummary();
+    nlohmann::json sitedata;
+    sitedata["site"] = sitename;
+    sitedata["files_total"] = summary.files_total;
+    sitedata["files_won"] = summary.files_won;
+    sitedata["files_lost"] = summary.files_lost;
+    sitedata["local_completion_seconds"] = summary.local_completion_seconds;
+    sitedata["race_won"] = summary.race_won;
+    sitesdata.push_back(sitedata);
   }
   j["section"] = spreadjob->getSection();
   j["sites"] = sites;
@@ -1499,6 +1510,7 @@ void RestApi::handleSpreadJobGet(RestApiCallback* cb, int connrequestid, const h
   j["percentage_complete_worst"] = spreadjob->getWorstCompletionPercentage();
   j["percentage_complete_average"] = spreadjob->getAverageCompletionPercentage();
   j["percentage_complete_best"] = spreadjob->getBestCompletionPercentage();
+  j["sites_data"] = sitesdata;
   http::Response response(200);
   std::string jsondump = j.dump(2);
   response.setBody(std::vector<char>(jsondump.begin(), jsondump.end()));

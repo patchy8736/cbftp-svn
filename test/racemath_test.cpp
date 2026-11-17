@@ -23,7 +23,7 @@ int main() {
     {"file3.rar", "rival1", "Nov 17 12:00"},
   };
   racemath::RaceWinSummary summary =
-      racemath::winSummary(entries, "myuser", 1730419200, 1731853380, 3);
+      racemath::winSummary(entries, "myuser", 1730419200, 1731853380, 1731853380, 3);
   assert(summary.files_total == 3);
   assert(summary.files_won == 2);
   assert(summary.files_lost == 1);
@@ -37,7 +37,7 @@ int main() {
     {"file2.rar", "rival1", "Oct 15 09:00"},
   };
   racemath::RaceWinSummary s2 =
-      racemath::winSummary(prejob, "myuser", 1730419200, 1731853380, 2);
+      racemath::winSummary(prejob, "myuser", 1730419200, 1731853380, 1731853380, 2);
   assert(s2.files_won == 1);
   assert(s2.files_lost == 0);
   assert(s2.race_won == true); // no competitor file in the window: trivially won
@@ -48,12 +48,12 @@ int main() {
     {"file2.rar", "rival1", "Nov 17 12:00"},
   };
   racemath::RaceWinSummary s3 =
-      racemath::winSummary(won, "myuser", 1730419200, 1730419200 + 11 * 3600, 2); // 11:00 completion
+      racemath::winSummary(won, "myuser", 1730419200, 1730419200 + 11 * 3600, 1730419200 + 11 * 3600, 2); // 11:00 completion
   assert(s3.race_won == true);
 
   // no local completion (completion_time 0): never won
   racemath::RaceWinSummary s4 =
-      racemath::winSummary(won, "myuser", 1730419200, 0, 2);
+      racemath::winSummary(won, "myuser", 1730419200, 0, 1731853380, 2);
   assert(s4.local_completion_seconds == 0);
   assert(s4.race_won == false);
 
@@ -64,7 +64,7 @@ int main() {
     {"file3.rar", "rival2", "Nov 17 14:23"},
   };
   racemath::RaceWinSummary s5 =
-      racemath::winSummary(boundary, "myuser", 1730419200, 1731853380, 3);
+      racemath::winSummary(boundary, "myuser", 1730419200, 1731853380, 1731853380, 3);
   assert(s5.files_won == 1);
   assert(s5.files_lost == 2);
   assert(s5.race_won == false);
@@ -82,8 +82,19 @@ int main() {
     {"file2.rar", "rival1", "Jan  1 00:10"},
   };
   racemath::RaceWinSummary s6 =
-      racemath::winSummary(rollover, "myuser", newyear_start, newyear_start + 3600, 2);
+      racemath::winSummary(rollover, "myuser", newyear_start, newyear_start + 3600, newyear_start + 3600, 2);
   assert(s6.files_lost == 1); // rival file must parse into the window's year, not the start year
   assert(s6.race_won == false);
+
+  // live job: window runs to now, no completion yet — losses counted, never won
+  std::vector<racemath::ListingEntry> live = {
+    {"file1.rar", "myuser", "Nov 17 10:00"},
+    {"file2.rar", "rival1", "Nov 17 12:00"},
+  };
+  racemath::RaceWinSummary s7 =
+      racemath::winSummary(live, "myuser", 1730419200, 0, 1731853380, 2);
+  assert(s7.files_lost == 1);
+  assert(s7.local_completion_seconds == 0);
+  assert(s7.race_won == false);
   return 0;
 }

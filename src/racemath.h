@@ -28,12 +28,13 @@ struct RaceWinSummary {
 long long parseMTime(const std::string& mtime, int year);
 
 // Per-site race outcome. Entries owned by our username count as wins;
-// competitor entries dated within [race_start, completion_time] count as
-// losses. The race is won when we reached local completion earlier than the
+// competitor entries dated within [race_start, window_end] count as losses.
+// The race is won when we reached local completion earlier than the
 // latest competitor file in the window (trivially won if there is none).
-// completion_time <= 0 means local completion was not reached.
+// completion_time <= 0 means local completion was not reached (live reads:
+// pass window_end = now, completion_time = 0).
 RaceWinSummary winSummary(const std::vector<ListingEntry>& entries, const std::string& username,
-    long long race_start, long long completion_time, unsigned int expected_files);
+    long long race_start, long long completion_time, long long window_end, unsigned int expected_files);
 
 // True when the destination site is missing exactly one release file.
 bool lastFileBoost(unsigned int remaining_files);

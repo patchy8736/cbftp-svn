@@ -4,6 +4,7 @@
 #include "filelist.h"
 #include "file.h"
 #include "globalcontext.h"
+#include "racemath.h"
 #include "skiplist.h"
 #include "util.h"
 #include "timereference.h"
@@ -29,6 +30,7 @@ SiteRace::SiteRace(const std::shared_ptr<Race>& race, const std::string& sitenam
   filesup(0),
   speedup(1),
   downloadonly(downloadonly),
+  winsummarytaken(false),
   id(race->getId())
 {
   recentlyvisited.push_back("");
@@ -303,6 +305,37 @@ bool SiteRace::isDone() const {
   return status != RaceStatus::RUNNING;
 }
 
+racemath::RaceWinSummary SiteRace::raceWinSummary(long long completion_time, long long window_end) const {
+  std::vector<racemath::ListingEntry> entries;
+  std::unordered_map<std::string, std::shared_ptr<FileList>>::const_iterator it;
+  for (it = filelists.begin(); it != filelists.end(); it++) {
+    const std::shared_ptr<FileList>& fl = it->second;
+    if (fl->getState() == FileListState::FAILED) {
+      continue;
+    }
+    for (std::list<File *>::const_iterator fit = fl->begin(); fit != fl->end(); fit++) {
+      const File * f = *fit;
+      if (f->isDirectory()) {
+        continue;
+      }
+      // truncation approximates eightCharUserCompare: exact for owners <= 8 chars,
+      // which is the common case; longer owner pairs sharing an 8-char prefix conflate
+      entries.push_back(racemath::ListingEntry{f->getName(), f->getOwner().substr(0, 8), f->getLastModified()});
+    }
+  }
+  std::shared_ptr<Race> srace = race.lock();
+  long long start = srace ? (long long)(srace->getCreatedEpoch() / 1000) : 0;
+  unsigned int expected = srace ? srace->getGuessedTotalNumFiles() : 0;
+  return racemath::winSummary(entries, username.substr(0, 8), start, completion_time, window_end, expected);
+}
+
+racemath::RaceWinSummary SiteRace::getRaceWinSummary() const {
+  if (winsummarytaken) {
+    return winsummary;
+  }
+  return raceWinSummary(0, util::getEpochNow());
+}
+
 RaceStatus SiteRace::getStatus() const {
   return status;
 }
@@ -322,6 +355,11 @@ void SiteRace::complete(bool report) {
   }
   if (status == RaceStatus::RUNNING) {
     status = RaceStatus::DONE;
+    if (!winsummarytaken) {
+      long long now = util::getEpochNow();
+      winsummary = raceWinSummary(now, now);
+      winsummarytaken = true;
+    }
   }
   if (report) {
     srace->reportDone(shared_from_this());
@@ -370,6 +408,7 @@ void SiteRace::reset() {
   maxfilesize = 0;
   totalfilesize = 0;
   numuploadedfiles = 0;
+  winsummarytaken = false;
 }
 
 void SiteRace::subPathComplete(const std::shared_ptr<FileList>& fl) {

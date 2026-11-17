@@ -239,6 +239,10 @@ unsigned int Race::getMaxSiteNumFilesProgress() const {
   return maxnumfilessiteprogress;
 }
 
+unsigned int Race::getGuessedTotalNumFiles() const {
+  return guessedtotalnumfiles;
+}
+
 bool Race::isDone() const {
   return status != RaceStatus::RUNNING;
 }
