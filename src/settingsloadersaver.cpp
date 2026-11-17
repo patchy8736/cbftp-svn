@@ -67,6 +67,34 @@ void stringToTrackerHours(HourlyAllTracking& tracker, const std::string& in) {
   tracker.setHours(hours, timestamp);
 }
 
+bool parseIntSetting(const std::string& value, int& out) {
+  try {
+    size_t pos;
+    out = std::stoi(value, &pos);
+    if (pos != value.size()) {
+      return false;
+    }
+  }
+  catch (const std::exception&) {
+    return false;
+  }
+  return true;
+}
+
+bool parseFloatSetting(const std::string& value, float& out) {
+  try {
+    size_t pos;
+    out = std::stof(value, &pos);
+    if (pos != value.size()) {
+      return false;
+    }
+  }
+  catch (const std::exception&) {
+    return false;
+  }
+  return true;
+}
+
 }
 
 SettingsLoaderSaver::SettingsLoaderSaver() :
@@ -691,6 +719,60 @@ void SettingsLoaderSaver::loadSettings() {
     else if (!setting.compare("maxspreadjobtimeseconds")) {
       global->getEngine()->setMaxSpreadJobTimeSeconds(std::stoi(value));
     }
+    else if (!setting.compare("maxpointsfilesize")) {
+      int v;
+      if (parseIntSetting(value, v)) {
+        global->getEngine()->setMaxPointsFileSize(v);
+      }
+    }
+    else if (!setting.compare("maxpointsavgspeed")) {
+      int v;
+      if (parseIntSetting(value, v)) {
+        global->getEngine()->setMaxPointsAvgSpeed(v);
+      }
+    }
+    else if (!setting.compare("maxpointspriority")) {
+      int v;
+      if (parseIntSetting(value, v)) {
+        global->getEngine()->setMaxPointsPriority(v);
+      }
+    }
+    else if (!setting.compare("maxpointspercentageowned")) {
+      int v;
+      if (parseIntSetting(value, v)) {
+        global->getEngine()->setMaxPointsPercentageOwned(v);
+      }
+    }
+    else if (!setting.compare("gatingfactor1")) {
+      float v;
+      if (parseFloatSetting(value, v)) {
+        global->getEngine()->setGatingFactor(1, v);
+      }
+    }
+    else if (!setting.compare("gatingfactor2")) {
+      float v;
+      if (parseFloatSetting(value, v)) {
+        global->getEngine()->setGatingFactor(2, v);
+      }
+    }
+    else if (!setting.compare("gatingfactor3")) {
+      float v;
+      if (parseFloatSetting(value, v)) {
+        global->getEngine()->setGatingFactor(3, v);
+      }
+    }
+    else if (!setting.compare("statictimeforcompletion")) {
+      int v;
+      if (parseIntSetting(value, v)) {
+        global->getEngine()->setStaticTimeForCompletion(v);
+      }
+    }
+    else if (!setting.compare("nfoprioafterseconds")) {
+      int v;
+      if (parseIntSetting(value, v)) {
+        global->getEngine()->setNfoPrioAfterSeconds(v);
+      }
+    }
   }
 
   dfh->getDataFor("TransferManager", &lines);
@@ -1095,6 +1177,15 @@ void SettingsLoaderSaver::saveSettings() {
     dfh->addOutputLine("Engine", "maxspreadjobshistory=" + std::to_string(global->getEngine()->getMaxSpreadJobsHistory()));
     dfh->addOutputLine("Engine", "maxtransferjobshistory=" + std::to_string(global->getEngine()->getMaxTransferJobsHistory()));
     dfh->addOutputLine("Engine", "maxspreadjobtimeseconds=" + std::to_string(global->getEngine()->getMaxSpreadJobTimeSeconds()));
+    dfh->addOutputLine("Engine", "maxpointsfilesize=" + std::to_string(global->getEngine()->getMaxPointsFileSize()));
+    dfh->addOutputLine("Engine", "maxpointsavgspeed=" + std::to_string(global->getEngine()->getMaxPointsAvgSpeed()));
+    dfh->addOutputLine("Engine", "maxpointspriority=" + std::to_string(global->getEngine()->getMaxPointsPriority()));
+    dfh->addOutputLine("Engine", "maxpointspercentageowned=" + std::to_string(global->getEngine()->getMaxPointsPercentageOwned()));
+    dfh->addOutputLine("Engine", "gatingfactor1=" + std::to_string(global->getEngine()->getGatingFactor(1)));
+    dfh->addOutputLine("Engine", "gatingfactor2=" + std::to_string(global->getEngine()->getGatingFactor(2)));
+    dfh->addOutputLine("Engine", "gatingfactor3=" + std::to_string(global->getEngine()->getGatingFactor(3)));
+    dfh->addOutputLine("Engine", "statictimeforcompletion=" + std::to_string(global->getEngine()->getStaticTimeForCompletion()));
+    dfh->addOutputLine("Engine", "nfoprioafterseconds=" + std::to_string(global->getEngine()->getNfoPrioAfterSeconds()));
   }
   {
     dfh->addOutputLine("TransferManager", "maxtransferhistory=" + std::to_string(global->getTransferManager()->getMaxTransferHistory()));

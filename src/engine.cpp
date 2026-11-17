@@ -36,10 +36,8 @@
 #include "transferprotocol.h"
 
 #define POKEINTERVAL 1000
-#define STATICTIMEFORCOMPLETION 5000
 #define DIROBSERVETIME 20000
 #define SFVDIROBSERVETIME 5000
-#define NFO_PRIO_AFTER_SEC 15
 #define RETRY_CONNECT_UNTIL_SEC 15
 #define MAX_PERCENTAGE_FOR_INCOMPLETE_DELETE 95
 
@@ -253,6 +251,11 @@ Engine::Engine() :
   maxpointspriority(2500),
   maxpointspercentageowned(2000),
   maxpointslowprogress(2000),
+  gatingfactor1(0.7),
+  gatingfactor2(0.5),
+  gatingfactor3(0.3),
+  statictimeforcompletion(5000),
+  nfoprioafterseconds(15),
   preparedraceexpirytime(120),
   startnextpreparedtimeout(300),
   startnextprepared(false),
@@ -1675,7 +1678,7 @@ void Engine::checkIfRaceComplete(const std::shared_ptr<SiteLogic> & sls, std::sh
           emptydirs = true;
         }
         else if (spfl->getNumUploadedFiles() >= race->estimatedSize(*itsp) &&
-          spfl->timeSinceLastChanged() > STATICTIMEFORCOMPLETION &&
+          spfl->timeSinceLastChanged() > static_cast<unsigned long long int>(statictimeforcompletion) &&
           sls->getCurrLogins() > sls->getCurrUp() + sls->getCurrDown() &&
           !spfl->hasFilesUploading())
         {
@@ -1757,7 +1760,7 @@ unsigned short Engine::calculateScore(PrioType priotype, unsigned long long int 
     case PrioType::PRIO:
       return 65535;
     case PrioType::PRIO_LATER:
-      if (itr->getTimeSpent() > NFO_PRIO_AFTER_SEC) {
+      if (itr->getTimeSpent() > static_cast<unsigned int>(nfoprioafterseconds)) {
         return 65535;
       }
       break;
@@ -2183,6 +2186,79 @@ int Engine::getPreparedRaceExpiryTime() const {
 
 void Engine::setPreparedRaceExpiryTime(int expirytime) {
   preparedraceexpirytime = expirytime;
+}
+
+void Engine::setMaxPointsFileSize(int points) {
+  if (points >= 0) {
+    maxpointsfilesize = points;
+  }
+}
+
+void Engine::setMaxPointsAvgSpeed(int points) {
+  if (points >= 0) {
+    maxpointsavgspeed = points;
+  }
+}
+
+void Engine::setMaxPointsPriority(int points) {
+  if (points >= 0) {
+    maxpointspriority = points;
+  }
+}
+
+void Engine::setMaxPointsPercentageOwned(int points) {
+  if (points >= 0) {
+    maxpointspercentageowned = points;
+  }
+}
+
+float Engine::getGatingFactor(int slotsavailable) const {
+  switch (slotsavailable) {
+    case 1:
+      return gatingfactor1;
+    case 2:
+      return gatingfactor2;
+    case 3:
+      return gatingfactor3;
+  }
+  return -1.0;
+}
+
+void Engine::setGatingFactor(int slotsavailable, float factor) {
+  if (factor < 0 || factor > 1) {
+    return;
+  }
+  switch (slotsavailable) {
+    case 1:
+      gatingfactor1 = factor;
+      break;
+    case 2:
+      gatingfactor2 = factor;
+      break;
+    case 3:
+      gatingfactor3 = factor;
+      break;
+  }
+}
+
+int Engine::getStaticTimeForCompletion() const {
+  return statictimeforcompletion;
+}
+
+void Engine::setStaticTimeForCompletion(int millis) {
+  if (millis >= 0) {
+    statictimeforcompletion = millis;
+  }
+}
+
+int Engine::getNfoPrioAfterSeconds() const {
+  return nfoprioafterseconds;
+}
+
+void Engine::setNfoPrioAfterSeconds(int seconds) {
+  if (seconds >= 0) {
+    nfoprioafterseconds = seconds;
+  }
 }
 
 void Engine::setNextPreparedRaceStarterTimeout(int timeout) {

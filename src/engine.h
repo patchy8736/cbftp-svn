@@ -79,6 +79,16 @@ public:
   void raceActionRequest();
   void setPreparedRaceExpiryTime(int expirytime);
   void setNextPreparedRaceStarterTimeout(int timeout);
+  void setMaxPointsFileSize(int points);
+  void setMaxPointsAvgSpeed(int points);
+  void setMaxPointsPriority(int points);
+  void setMaxPointsPercentageOwned(int points);
+  float getGatingFactor(int slotsavailable) const;
+  void setGatingFactor(int slotsavailable, float factor);
+  int getStaticTimeForCompletion() const;
+  void setStaticTimeForCompletion(int millis);
+  int getNfoPrioAfterSeconds() const;
+  void setNfoPrioAfterSeconds(int seconds);
   unsigned int preparedRaces() const;
   unsigned int currentRaces() const;
   unsigned int allRaces() const;
@@ -175,6 +185,11 @@ public:
   int maxpointspriority;
   int maxpointspercentageowned;
   int maxpointslowprogress;
+  float gatingfactor1;
+  float gatingfactor2;
+  float gatingfactor3;
+  int statictimeforcompletion;
+  int nfoprioafterseconds;
   int preparedraceexpirytime;
   int startnextpreparedtimeout;
   bool startnextprepared;

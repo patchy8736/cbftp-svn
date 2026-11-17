@@ -2193,27 +2193,15 @@ void SiteLogic::pushPotential(int score, const std::string & file, const std::sh
 
 bool SiteLogic::potentialCheck(int score, TransferOriginType type) {
   int dnavail = downloadSlotsAvailable(type);
-  int max = ptrack->getMaxAvailablePotential();
-  float factor = 0;
-  switch (dnavail) {
-    case 0:
-      return false;
-    case 1:
-      factor = 0.7;
-      break;
-    case 2:
-      factor = 0.5;
-      break;
-    case 3:
-      factor = 0.3;
-      break;
-    default:
-      return true;
+  if (dnavail == 0) {
+    return false;
   }
-  if (score >= max * factor) {
+  float factor = global->getEngine()->getGatingFactor(dnavail);
+  if (factor < 0) {
     return true;
   }
-  return false;
+  int max = ptrack->getMaxAvailablePotential();
+  return score >= max * factor;
 }
 
 int SiteLogic::getPotential() {
