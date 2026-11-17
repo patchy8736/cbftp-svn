@@ -912,7 +912,7 @@ void Engine::jobFileListRefreshed(SiteLogic * sls, const std::shared_ptr<Command
       if (fl->getScoreBoardUpdateState() == UpdateState::CHANGED) {
         spreadjobfilelistschanged[fl] = std::make_pair(sr, sl);
       }
-      if (!global->getWorkManager()->overload() || forcescoreboard) {
+      if (!race->isDone() || !global->getWorkManager()->overload() || forcescoreboard) {
         forcescoreboard = false;
         updateScoreBoard();
         checkIfRaceComplete(sl, race);
