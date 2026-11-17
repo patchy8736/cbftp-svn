@@ -1150,8 +1150,9 @@ void Ui::notify() {
   renderer.bell();
 }
 
-void Ui::requestReady(void* service, int requestid) {
+bool Ui::requestReady(void* service, int requestid) {
   backendPush();
+  return true;
 }
 
 void Ui::intermediateData(void* service, int requestid, void* data) {

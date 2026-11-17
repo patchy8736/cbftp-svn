@@ -8,7 +8,6 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#define SIZEPOWER 1024
 #define SIZEDECIMALS 2
 
 namespace util {
@@ -23,8 +22,8 @@ struct Result {
 std::string trim(const std::string &);
 std::list<std::string> trim(const std::list<std::string> & in);
 std::vector<std::string> trim(const std::vector<std::string> & in);
-std::string simpleTimeFormat(int);
-std::string & debugString(const char *);
+std::string simpleTimeFormat(int seconds);
+std::string simpleTimeFormat(int milliseconds, bool showmillis);
 std::string parseSize(unsigned long long int);
 std::string getGroupNameFromRelease(const std::string &);
 std::string toLower(const std::string &);
@@ -47,4 +46,5 @@ struct naturalComparator {
   bool operator()(const std::string& a, const std::string& b) const;
 };
 unsigned long long int getEpochNow();
+unsigned long long int getEpochNowMillis();
 }

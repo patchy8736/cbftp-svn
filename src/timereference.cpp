@@ -13,7 +13,7 @@ static int currentyear = 0;
 static int currentmonth = 0;
 static int currentday = 0;
 
-TimeReference::TimeReference() : timeticker(0), logtimestampms(false) {
+TimeReference::TimeReference() : timeticker(0), timestampms(false) {
   global->getTickPoke()->startPoke(this, "TimeReference", INTERVAL, 0);
 }
 
@@ -31,7 +31,7 @@ std::string TimeReference::getCurrentTimeStamp(bool includedate) const {
     pos = std::sprintf(timebuf, "%d-%.2d-%.2d ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
   }
   pos += std::sprintf(timebuf + pos, "%.2d:%.2d:%.2d", tm.tm_hour, tm.tm_min, tm.tm_sec);
-  if (logtimestampms) {
+  if (timestampms) {
     struct timespec tp;
     clock_gettime(CLOCK_REALTIME, &tp);
     std::sprintf(timebuf + pos, ".%.3d", (unsigned int)(tp.tv_nsec / 1000000));
@@ -47,12 +47,12 @@ std::string TimeReference::getCurrentLogTimeStamp() const {
   return getCurrentTimeStamp(false);
 }
 
-bool TimeReference::getLogTimeStampMilliseconds() const {
-  return logtimestampms;
+bool TimeReference::getTimeStampMilliseconds() const {
+  return timestampms;
 }
 
-void TimeReference::setLogTimeStampMilliseconds(bool ms) {
-  logtimestampms = ms;
+void TimeReference::setTimeStampMilliseconds(bool ms) {
+  timestampms = ms;
 }
 
 unsigned long long TimeReference::timeReference() const {

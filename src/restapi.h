@@ -47,7 +47,7 @@ public:
   void cancelOngoingSyncRequests(RestApiCallback* cb);
 private:
   void tick(int message) override;
-  void requestReady(void* service, int servicerequestid) override;
+  bool requestReady(void* service, int servicerequestid) override;
   void respondAsynced(OngoingRequest& request);
   void finalize(OngoingRequest& request);
   OngoingRequest* findOngoingRequest(void* service, int servicerequestid);

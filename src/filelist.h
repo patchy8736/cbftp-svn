@@ -73,7 +73,10 @@ class FileList {
     bool updateFile(File* f);
     void touchFile(const std::string &, const std::string &, bool upload = false);
     void removeFile(const std::string &);
-    void setFileUpdateFlag(const std::string &, unsigned long long int, unsigned int, const std::shared_ptr<Site> &, const std::shared_ptr<Site> &, const std::shared_ptr<CommandOwner> & srcco, const std::shared_ptr<CommandOwner> & dstco);
+    void setFileUpdateFlag(const std::string& name,
+        unsigned long long int size, unsigned long long int speed, const std::shared_ptr<Site>& src,
+        const std::shared_ptr<Site>& dst, const std::shared_ptr<CommandOwner>& srcco,
+        const std::shared_ptr<CommandOwner>& dstco);
     File * getFile(const std::string &) const;
     FileListState getState() const;
     void setNonExistent();

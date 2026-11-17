@@ -10,6 +10,7 @@
 #include "../misc.h"
 
 #include "../../globalcontext.h"
+#include "../../timereference.h"
 #include "../../transferstatus.h"
 #include "../../transfermanager.h"
 #include "../../util.h"
@@ -334,10 +335,10 @@ bool TransfersScreen::showsWhileFiltered(const std::shared_ptr<TransferStatus>& 
         }
     }
   }
-  if (tfp.usespeedbelowfilter && tfp.speedbelowfilter * 1024 < ts->getSpeed()) {
+  if (tfp.usespeedbelowfilter && tfp.speedbelowfilter * 1024 * 1024 < ts->getSpeed()) {
     return false;
   }
-  if (tfp.usespeedabovefilter && tfp.speedabovefilter * 1024 >= ts->getSpeed()) {
+  if (tfp.usespeedabovefilter && tfp.speedabovefilter * 1024 * 1024 >= ts->getSpeed()) {
     return false;
   }
   return true;
@@ -592,8 +593,8 @@ TransferDetails TransfersScreen::formatTransferDetails(std::shared_ptr<TransferS
   TransferDetails td;
   td.route = ts->getSource() + " -> " + ts->getTarget();
   td.path = ts->getSourcePath().toString() + " -> " + ts->getTargetPath().toString();
-  td.speed = util::parseSize(ts->getSpeed() * SIZEPOWER) + "/s";
-  td.timespent = util::simpleTimeFormat(ts->getTimeSpent());
+  td.speed = util::parseSize(ts->getSpeed()) + "/s";
+  td.timespent = util::simpleTimeFormat(ts->getTimeSpent(), global->getTimeReference()->getTimeStampMilliseconds());
   td.timeremaining = "-";
   td.transferred = util::parseSize(ts->targetSize());
   switch (ts->getState()) {

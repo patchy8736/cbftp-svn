@@ -259,7 +259,7 @@ bool File::updateFlagSet() const {
   return updateflag;
 }
 
-unsigned int File::getUpdateSpeed() const {
+unsigned long long int File::getUpdateSpeed() const {
   return updatespeed;
 }
 
@@ -279,7 +279,10 @@ const std::shared_ptr<CommandOwner> & File::getUpdateDstCommandOwner() const {
   return updatecodst;
 }
 
-void File::setUpdateFlag(const std::shared_ptr<Site> & src, const std::shared_ptr<Site> &dst, const std::shared_ptr<CommandOwner> & srcco, const std::shared_ptr<CommandOwner> & dstco, unsigned int speed) {
+void File::setUpdateFlag(const std::shared_ptr<Site>& src, const std::shared_ptr<Site>& dst,
+    const std::shared_ptr<CommandOwner>& srcco, const std::shared_ptr<CommandOwner>& dstco,
+    unsigned long long int speed)
+{
   updatesrc = src;
   updatedst = dst;
   updatecosrc = srcco;

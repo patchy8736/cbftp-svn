@@ -14,6 +14,7 @@
 #include "../../transferjob.h"
 #include "../../globalcontext.h"
 #include "../../engine.h"
+#include "../../timereference.h"
 #include "../../transferstatus.h"
 #include "../../sitelogic.h"
 #include "../../site.h"
@@ -97,11 +98,11 @@ void TransferJobStatusScreen::redraw() {
   ++y;
   vv->putStr(y, 1, "Size: " + util::parseSize(transferjob->sizeProgress()) +
       " / " + util::parseSize(transferjob->totalSize()));
-  vv->putStr(y, 35, "Speed: " + (started ? util::parseSize(transferjob->getSpeed() * SIZEPOWER) + "/s" : "-"));
+  vv->putStr(y, 35, "Speed: " + (started ? util::parseSize(transferjob->getSpeed()) + "/s" : "-"));
   vv->putStr(y, 60, "Files: " + std::to_string(transferjob->filesProgress()) + "/" +
       std::to_string(transferjob->filesTotal()));
   y++;
-  vv->putStr(y, 1, "Time spent: " + util::simpleTimeFormat(transferjob->timeSpent()));
+  vv->putStr(y, 1, "Time spent: " + util::simpleTimeFormat(transferjob->timeSpentMillis(), global->getTimeReference()->getTimeStampMilliseconds()));
   vv->putStr(y, 21, "Remaining: " + (running ? util::simpleTimeFormat(transferjob->timeRemaining()) : "-"));
   int progresspercent = transferjob->getProgress();
   std::string progress = "....................";

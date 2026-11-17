@@ -68,30 +68,43 @@ std::vector<std::string> trim(const std::vector<std::string> & in) {
 }
 
 std::string simpleTimeFormat(int seconds) {
-  std::string time;
-  if (seconds >= 86400) {
-    int days = seconds / 86400;
-    time = std::to_string(days) + "d";
-    seconds = seconds % 86400;
-  }
-  if (seconds >= 3600) {
-    int hours = seconds / 3600;
-    time += std::to_string(hours) + "h";
-    seconds = seconds % 3600;
-  }
-  if (seconds >= 60) {
-    int minutes = seconds / 60;
-    time += std::to_string(minutes) + "m";
-    seconds = seconds % 60;
-  }
-  if (seconds || !time.length()) {
-    time += std::to_string(seconds) + "s";
-  }
-  return time;
+  return simpleTimeFormat(seconds * 1000, false);
 }
 
-std::string & debugString(const char * s) {
-    return *(new std::string(s));
+std::string simpleTimeFormat(int milliseconds, bool showmillis) {
+  if (showmillis && milliseconds < 1000) {
+    return std::to_string(milliseconds) + "ms";
+  }
+  std::string time;
+  if (milliseconds >= 86400000) {
+    int days = milliseconds / 86400000;
+    time = std::to_string(days) + "d";
+    milliseconds = milliseconds % 86400000;
+  }
+  if (milliseconds >= 3600000) {
+    int hours = milliseconds / 3600000;
+    time += std::to_string(hours) + "h";
+    milliseconds = milliseconds % 3600000;
+  }
+  if (milliseconds >= 60000) {
+    int minutes = milliseconds / 60000;
+    time += std::to_string(minutes) + "m";
+    milliseconds = milliseconds % 60000;
+  }
+  int seconds = milliseconds / 1000;
+  if (showmillis || seconds || !time.length()) {
+    time += std::to_string(seconds);
+    milliseconds = milliseconds % 1000;
+    if (showmillis) {
+      char buf[16];
+      std::sprintf(buf, ".%.3ds", milliseconds);
+      time += buf;
+    }
+    else {
+      time += "s";
+    }
+  }
+  return time;
 }
 
 std::string parseSize(unsigned long long int size) {
@@ -439,6 +452,12 @@ bool naturalComparator::operator()(const std::string& a, const std::string& b) c
 
 unsigned long long int getEpochNow() {
   return time(nullptr);
+}
+
+unsigned long long int getEpochNowMillis() {
+  struct timespec tp;
+  clock_gettime(CLOCK_REALTIME, &tp);
+  return tp.tv_sec * 1000 + tp.tv_nsec / 1000000;
 }
 
 }

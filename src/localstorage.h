@@ -27,8 +27,8 @@ class LocalStorage : public Core::EventReceiver {
 public:
   LocalStorage();
   ~LocalStorage();
-  LocalTransfer* preparePassiveDownload();
-  LocalTransfer* preparePassiveUpload();
+  LocalTransfer* preparePassiveDownload(TransferMonitor* tm);
+  LocalTransfer* preparePassiveUpload(TransferMonitor* tm);
   void passiveModeDownload(TransferMonitor* tm, LocalTransfer* lt, const std::string& file, bool ipv6, const std::string& host, int port, bool ssl, FTPConn* ftpconn);
   void passiveModeDownload(TransferMonitor* tm, LocalTransfer* lt, const Path& path, const std::string & file, bool ipv6, const std::string & host, int port, bool ssl, FTPConn* ftpconn);
   void passiveModeDownload(TransferMonitor* tm, LocalTransfer* lt, bool ipv6, const std::string& host, int port, bool ssl, FTPConn* ftpconn);

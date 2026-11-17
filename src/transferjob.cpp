@@ -571,7 +571,7 @@ void TransferJob::start() {
   }
   timestarted = global->getTimeReference()->getCurrentLogTimeStamp();
   timestartedfull = global->getTimeReference()->getCurrentFullTimeStamp();
-  startedepoch = util::getEpochNow();
+  startedepoch = util::getEpochNowMillis();
   status = TRANSFERJOB_RUNNING;
   global->getTickPoke()->startPoke(this, "TransferJob", TRANSFERJOB_UPDATE_INTERVAL, 0);
 }
@@ -675,10 +675,10 @@ void TransferJob::updateStatus() {
     milliprogress = (1000 * sizeprogress) / expectedfinalsize;
   }
   if (timespentmillis) {
-    speed = sizeprogress / timespentmillis;
+    speed = sizeprogress * 1000 / timespentmillis;
   }
   if (speed) {
-    timeremaining = (expectedfinalsize - sizeprogress) / (speed * 1024);
+    timeremaining = (expectedfinalsize - sizeprogress) / speed;
   }
   filesprogress = filescompleted.size();
   int filesexistingorcompleted = util::merge(existingtargets, filescompleted).size();
@@ -703,6 +703,10 @@ int TransferJob::getMilliProgress() const {
 
 int TransferJob::timeSpent() const {
   return timespentsecs;
+}
+
+int TransferJob::timeSpentMillis() const {
+  return timespentmillis;
 }
 
 int TransferJob::timeRemaining() const {
@@ -909,6 +913,8 @@ void TransferJob::setDone() {
   }
   global->getTickPoke()->stopPoke(this, 0);
   status = TRANSFERJOB_DONE;
+  timespentmillis = util::getEpochNowMillis() - startedepoch;
+  timespentsecs = timespentmillis / 1000;
   timeremaining = 0;
 }
 

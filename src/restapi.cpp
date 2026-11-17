@@ -1196,7 +1196,7 @@ void RestApi::handleSiteGet(RestApiCallback* cb, int connrequestid, const http::
   j["list_frequency"] = refreshRateToString(site->getRefreshRate());
   j["xdupe"] = site->useXDUPE();
   j["sections"] = jsonSiteSections(site);
-  for (std::map<std::string, int>::const_iterator it = site->avgspeedBegin(); it != site->avgspeedEnd(); ++it) {
+  for (std::map<std::string, unsigned long long int>::const_iterator it = site->avgspeedBegin(); it != site->avgspeedEnd(); ++it) {
     j["avg_speed"][it->first] = it->second;
   }
   nlohmann::json affils = nlohmann::json::array();
@@ -2214,10 +2214,10 @@ OngoingRequest* RestApi::findOngoingRequest(int apirequestid) {
   return nullptr;
 }
 
-void RestApi::requestReady(void* service, int servicerequestid) {
+bool RestApi::requestReady(void* service, int servicerequestid) {
   OngoingRequest* request = findOngoingRequest(service, servicerequestid);
   if (!request) {
-    return;
+    return false;
   }
 
   switch (request->type) {
@@ -2237,7 +2237,7 @@ void RestApi::requestReady(void* service, int servicerequestid) {
       if (request->ongoingservicerequests.empty() && !request->async) {
         finalize(*request);
       }
-      return;
+      return true;
     }
     case OngoingRequestType::FILE_LIST: {
       SiteLogic* sl = static_cast<SiteLogic*>(service);
@@ -2278,7 +2278,7 @@ void RestApi::requestReady(void* service, int servicerequestid) {
           break;
         }
       }
-      return;
+      return true;
     }
     case OngoingRequestType::DOWNLOAD_FILE: {
       SiteLogic* sl = static_cast<SiteLogic*>(service);
@@ -2301,9 +2301,10 @@ void RestApi::requestReady(void* service, int servicerequestid) {
           break;
         }
       }
-      return;
+      return true;
     }
   }
+  return false;
 }
 
 void RestApi::finalize(OngoingRequest& request) {

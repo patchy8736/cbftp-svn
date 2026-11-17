@@ -59,15 +59,15 @@ LocalStorage::~LocalStorage() {
 
 }
 
-LocalTransfer* LocalStorage::preparePassiveDownload() {
+LocalTransfer* LocalStorage::preparePassiveDownload(TransferMonitor* tm) {
   LocalDownload* ld = getAvailableLocalDownload();
-  ld->reserve();
+  ld->reserve(tm);
   return static_cast<LocalTransfer*>(ld);
 }
 
-LocalTransfer* LocalStorage::preparePassiveUpload() {
+LocalTransfer* LocalStorage::preparePassiveUpload(TransferMonitor* tm) {
   LocalUpload* lu = getAvailableLocalUpload();
-  lu->reserve();
+  lu->reserve(tm);
   return static_cast<LocalTransfer*>(lu);
 }
 

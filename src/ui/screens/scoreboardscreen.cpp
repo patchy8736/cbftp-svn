@@ -18,8 +18,8 @@ ScoreBoardScreen::ScoreBoardScreen(Ui* ui) : UIWindow(ui, "ScoreBoardScreen"), t
   keybinds.addBind('c', KEYACTION_BACK_CANCEL, "Return");
   keybinds.addBind(KEY_UP, KEYACTION_UP, "Navigate up");
   keybinds.addBind(KEY_DOWN, KEYACTION_DOWN, "Navigate down");
-  keybinds.addBind(KEY_PPAGE, KEYACTION_PREVIOUS_PAGE, "Next page");
-  keybinds.addBind(KEY_NPAGE, KEYACTION_NEXT_PAGE, "Previous page");
+  keybinds.addBind(KEY_PPAGE, KEYACTION_PREVIOUS_PAGE, "Previous page");
+  keybinds.addBind(KEY_NPAGE, KEYACTION_NEXT_PAGE, "Next page");
   keybinds.addBind(KEY_HOME, KEYACTION_TOP, "Go top");
   keybinds.addBind(KEY_END, KEYACTION_BOTTOM, "Go bottom");
 }

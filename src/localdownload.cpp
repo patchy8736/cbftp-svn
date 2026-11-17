@@ -23,12 +23,14 @@ LocalDownload::LocalDownload(LocalStorage* ls) :
 void LocalDownload::engage(TransferMonitor* tm, int localtransferid, const Path& path, const std::string& filename, bool ipv6, const std::string& addr, int port, bool ssl, FTPConn* ftpconn) {
   init(tm, localtransferid, ftpconn, path, filename, false, -1, ssl, true, port);
   sockid = -1;
+  state = LocalTransferState::CONNECTING;
   sockid = interConnect(Address(addr, port, ipv6 ? Core::AddressFamily::IPV6 : Core::AddressFamily::IPV4), ftpconn->getDataProxy());
 }
 
 bool LocalDownload::engage(TransferMonitor* tm, int localtransferid, const Path& path, const std::string& filename, bool ipv6, bool ssl, FTPConn* ftpconn) {
   init(tm, localtransferid, ftpconn, path, filename, false, -1, ssl, false);
   sockid = -1;
+  state = LocalTransferState::LISTENING;
   sockid = interListen(ipv6 ? Core::AddressFamily::IPV6 : Core::AddressFamily::IPV4, ftpconn->getDataProxy(), ftpconn->getSockId());
   return sockid != -1;
 }
@@ -36,22 +38,25 @@ bool LocalDownload::engage(TransferMonitor* tm, int localtransferid, const Path&
 void LocalDownload::engage(TransferMonitor* tm, int localtransferid, int storeid, bool ipv6, const std::string& addr, int port, bool ssl, FTPConn* ftpconn) {
   init(tm, localtransferid, ftpconn, "", "", true, storeid, ssl, true, port);
   sockid = -1;
+  state = LocalTransferState::CONNECTING;
   sockid = interConnect(Address(addr, port, ipv6 ? Core::AddressFamily::IPV6 : Core::AddressFamily::IPV4), ftpconn->getDataProxy());
 }
 
 bool LocalDownload::engage(TransferMonitor* tm, int localtransferid, int storeid, bool ipv6, bool ssl, FTPConn* ftpconn) {
   init(tm, localtransferid, ftpconn, "", "", true, storeid, ssl, false);
   sockid = -1;
+  state = LocalTransferState::LISTENING;
   sockid = interListen(ipv6 ? Core::AddressFamily::IPV6 : Core::AddressFamily::IPV4, ftpconn->getDataProxy(), ftpconn->getSockId());
   return sockid != -1;
 }
 
-void LocalDownload::reserve() {
-  tm = nullptr;
+void LocalDownload::reserve(TransferMonitor* tm) {
+  sockid = -1;
+  this->tm = tm;
   ftpconn = nullptr;
   path = "";
   filename = "";
-  inuse = true;
+  state = LocalTransferState::RESERVED;
   bufpos = 0;
   filesize = 0;
   fileopened = false;
@@ -79,8 +84,12 @@ void LocalDownload::FDInterConnected(int sockid) {
   }
   tm->localInfo("Connection established");
   if (ssl) {
+    state = LocalTransferState::TLS_HANDSHAKE;
     tm->localInfo("Performing TLS handshake");
     negotiateSSLConnect(ftpconn->getSockId());
+  }
+  else {
+    state = LocalTransferState::ESTABLISHED;
   }
   if (passivemode) {
     tm->activeStarted();
@@ -91,6 +100,7 @@ void LocalDownload::FDInterDisconnected(int sockid, Core::DisconnectType reason,
   if (this->sockid == -1 || sockid != this->sockid) {
     return;
   }
+  this->sockid = -1;
   if (!inmemory) {
     if (bufpos > 0) {
       if (!fileopened) {
@@ -116,7 +126,6 @@ void LocalDownload::FDInterDisconnected(int sockid, Core::DisconnectType reason,
     tm->localError(details);
     tm->targetError(TM_ERR_RETRSTOR_COMPLETE);
   }
-  this->sockid = -1;
 }
 
 void LocalDownload::FDSSLSuccess(int sockid, const std::string& cipher) {
@@ -125,6 +134,7 @@ void LocalDownload::FDSSLSuccess(int sockid, const std::string& cipher) {
   }
   tm->localInfo("TLS handshake successful");
   ftpconn->printCipher(cipher);
+  state = LocalTransferState::ESTABLISHED;
   bool sessionreused = global->getIOManager()->getSSLSessionReused(sockid);
   tm->sslDetails(cipher, sessionreused);
 }
@@ -147,9 +157,9 @@ void LocalDownload::FDFail(int sockid, const std::string& error) {
   if (this->sockid == -1 || sockid != this->sockid) {
     return;
   }
+  this->sockid = -1;
   tm->localError(error);
   tm->targetError(TM_ERR_OTHER);
-  this->sockid = -1;
 }
 
 unsigned long long int LocalDownload::size() const {
@@ -200,12 +210,16 @@ int LocalDownload::getStoreId() const {
 
 void LocalDownload::disconnect() {
   if (sockid == -1) {
+    if (state == LocalTransferState::RESERVED) {
+      tm->targetError(TM_ERR_OTHER);
+    }
     return;
   }
   if (fileopened) {
     filestream.close();
   }
   global->getIOManager()->closeSocket(sockid);
+  this->sockid = -1;
   tm->localInfo("Closing connection");
   tm->targetError(TM_ERR_OTHER);
 }

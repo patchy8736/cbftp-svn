@@ -128,6 +128,7 @@ void ProxyOptionsScreen::command(const std::string & command) {
       return;
     }
   }
+  ui->redraw();
 }
 
 bool ProxyOptionsScreen::keyPressed(unsigned int ch) {

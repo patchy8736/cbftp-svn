@@ -23,21 +23,25 @@ LocalUpload::LocalUpload() :
 
 void LocalUpload::engage(TransferMonitor* tm, int localtransferid, const Path& path, const std::string& filename, bool ipv6, const std::string& addr, int port, bool ssl, FTPConn* ftpconn) {
   init(tm, localtransferid, ftpconn, path, filename, ssl, true, port);
+  state = LocalTransferState::CONNECTING;
   sockid = interConnect(Address(addr, port, ipv6 ? Core::AddressFamily::IPV6 : Core::AddressFamily::IPV4), ftpconn->getDataProxy());
 }
 
 bool LocalUpload::engage(TransferMonitor* tm, int localtransferid, const Path& path, const std::string& filename, bool ipv6, bool ssl, FTPConn* ftpconn) {
   init(tm, localtransferid, ftpconn, path, filename, ssl, false);
+  state = LocalTransferState::LISTENING;
   sockid = interListen(ipv6 ? Core::AddressFamily::IPV6 : Core::AddressFamily::IPV4, ftpconn->getDataProxy());
   return sockid != -1;
 }
 
-void LocalUpload::reserve() {
-  tm = nullptr;
+void LocalUpload::reserve(TransferMonitor* tm) {
+  assert(!active());
+  sockid = -1;
+  this->tm = tm;
   ftpconn = nullptr;
   path = "";
   filename = "";
-  inuse = true;
+  state = LocalTransferState::RESERVED;
   filepos = 0;
   fileopened = false;
 }
@@ -61,8 +65,12 @@ void LocalUpload::FDInterConnected(int sockid) {
   }
   tm->localInfo("Connection established");
   if (ssl) {
+    state = LocalTransferState::TLS_HANDSHAKE;
     tm->localInfo("Performing TLS handshake");
     global->getIOManager()->negotiateSSLConnect(sockid, ftpconn->getSockId());
+  }
+  else {
+    state = LocalTransferState::ESTABLISHED;
   }
   if (passivemode) {
     tm->activeStarted();
@@ -79,18 +87,19 @@ void LocalUpload::FDInterDisconnected(int sockid, Core::DisconnectType reason, c
   if (sockid != this->sockid) {
     return;
   }
+  this->sockid = -1;
   if (fileopened) {
     filestream.close();
   }
   tm->localError(details);
   tm->sourceError(TM_ERR_OTHER);
-  this->sockid = -1;
 }
 
 void LocalUpload::FDSSLSuccess(int sockid, const std::string& cipher) {
   if (sockid != this->sockid) {
     return;
   }
+  state = LocalTransferState::ESTABLISHED;
   tm->localInfo("TLS handshake successful");
   ftpconn->printCipher(cipher);
   bool sessionreused = global->getIOManager()->getSSLSessionReused(sockid);
@@ -131,9 +140,9 @@ void LocalUpload::FDFail(int sockid, const std::string& error) {
   if (sockid == -1 || sockid != this->sockid) {
     return;
   }
+  this->sockid = -1;
   tm->localError(error);
   tm->sourceError(TM_ERR_OTHER);
-  this->sockid = -1;
 }
 
 void LocalUpload::FDInterData(int sockid, char* data, unsigned int len) {
@@ -161,12 +170,16 @@ unsigned long long int LocalUpload::size() const {
 
 void LocalUpload::disconnect() {
   if (sockid == -1) {
+    if (state == LocalTransferState::RESERVED) {
+      tm->sourceError(TM_ERR_OTHER);
+    }
     return;
   }
   if (fileopened) {
     filestream.close();
   }
   global->getIOManager()->closeSocket(sockid);
+  this->sockid = -1;
   tm->localInfo("Closing connection");
   tm->sourceError(TM_ERR_OTHER);
 }

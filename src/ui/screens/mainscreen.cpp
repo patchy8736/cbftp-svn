@@ -220,7 +220,7 @@ void MainScreen::redraw() {
     msop.adjustLines(col - 3);
     irow++;
   }
-  unsigned long long int epochnow = util::getEpochNow();
+  unsigned long long int epochnow = util::getEpochNowMillis();
   {
     int maxjobs = ui->getMaxMainScreenSpreadJobs();
     int maxage = ui->getMaxMainScreenSpreadJobAge();
@@ -233,7 +233,7 @@ void MainScreen::redraw() {
       addedjobs.insert((*it)->getId());
     }
     for (it = --global->getEngine()->getFinishedRacesEnd(); it != --global->getEngine()->getFinishedRacesBegin() && (int)shownjobs.size() < maxjobs; it--) {
-      if (maxage > 0 && epochnow - (*it)->getCreatedEpoch() > (unsigned long long int)maxage) {
+      if (maxage > 0 && (epochnow - (*it)->getCreatedEpoch()) / 1000 > (unsigned long long int)maxage) {
         break;
       }
       if (addedjobs.find((*it)->getId()) == addedjobs.end()) {
@@ -268,7 +268,7 @@ void MainScreen::redraw() {
     for (it = --global->getEngine()->getTransferJobsEnd(); it != --global->getEngine()->getTransferJobsBegin() && (int)shownjobs.size() < maxjobs; it--) {
       if (maxage > 0) {
         unsigned long long int startedepoch = (*it)->getStartedEpoch();
-        if (startedepoch != 0 && epochnow - startedepoch > (unsigned long long int)maxage) {
+        if (startedepoch != 0 && (epochnow - startedepoch) / 1000 > (unsigned long long int)maxage) {
           break;
         }
       }

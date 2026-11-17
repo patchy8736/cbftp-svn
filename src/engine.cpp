@@ -245,7 +245,7 @@ JobStartResult::operator bool() const {
 Engine::Engine() :
   scoreboard(std::make_shared<ScoreBoard>()),
   failboard(std::make_shared<ScoreBoard>()),
-  maxavgspeed(1024),
+  maxavgspeed(1024 * 1024),
   pokeregistered(false),
   nextid(1),
   maxpointsfilesize(2000),
@@ -1814,12 +1814,14 @@ unsigned short Engine::calculateScore(PrioType priotype, unsigned long long int 
 }
 
 void Engine::setSpeedScale() {
-  maxavgspeed = 1024;
+  maxavgspeed = 1024 * 1024;
   for (std::list<std::shared_ptr<Race> >::iterator itr = currentraces.begin(); itr != currentraces.end(); itr++) {
     for (std::set<std::pair<std::shared_ptr<SiteRace>, std::shared_ptr<SiteLogic> > >::const_iterator its = (*itr)->begin(); its != (*itr)->end(); its++) {
       for (std::set<std::pair<std::shared_ptr<SiteRace>, std::shared_ptr<SiteLogic> > >::const_iterator itd = (*itr)->begin(); itd != (*itr)->end(); itd++) {
         int avgspeed = its->second->getSite()->getAverageSpeed(itd->second->getSite()->getName());
-        if (avgspeed > maxavgspeed) maxavgspeed = avgspeed;
+        if (avgspeed > maxavgspeed) {
+          maxavgspeed = avgspeed;
+        }
       }
     }
   }

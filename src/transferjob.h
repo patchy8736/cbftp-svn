@@ -95,6 +95,7 @@ public:
   int getProgress() const;
   int getMilliProgress() const;
   int timeSpent() const;
+  int timeSpentMillis() const;
   int timeRemaining() const;
   unsigned long long int sizeProgress() const;
   unsigned long long int totalSize() const;

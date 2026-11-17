@@ -197,7 +197,7 @@ void GlobalOptionsScreen::initialize(unsigned int row, unsigned int col) {
   std::shared_ptr<MenuSelectOptionTextArrow> timestampgranularity = mso.addTextArrow(y++, x, "timestampgranularity", "Time stamp granularity:");
   timestampgranularity->addOption("Seconds", 0);
   timestampgranularity->addOption("Milliseconds", 1);
-  timestampgranularity->setOption(global->getTimeReference()->getLogTimeStampMilliseconds() ? 1 : 0);
+  timestampgranularity->setOption(global->getTimeReference()->getTimeStampMilliseconds() ? 1 : 0);
   std::shared_ptr<MenuSelectOptionTextArrow> legendmode = mso.addTextArrow(y++, x, "legendmode", "Legend bar:");
   legendmode->addOption("Disabled", LEGEND_DISABLED);
   legendmode->addOption("Scrolling", LEGEND_SCROLLING);
@@ -466,7 +466,7 @@ bool GlobalOptionsScreen::keyPressed(unsigned int ch) {
           sm->setDefaultMaxIdleTime(std::stoi(std::static_pointer_cast<MenuSelectOptionTextField>(msoe)->getData()));
         }
         else if (identifier == "timestampgranularity") {
-          global->getTimeReference()->setLogTimeStampMilliseconds(std::static_pointer_cast<MenuSelectOptionTextArrow>(msoe)->getData());
+          global->getTimeReference()->setTimeStampMilliseconds(std::static_pointer_cast<MenuSelectOptionTextArrow>(msoe)->getData());
         }
         else if (identifier == "legendmode") {
           ui->setLegendMode((LegendMode)std::static_pointer_cast<MenuSelectOptionTextArrow>(msoe)->getData());

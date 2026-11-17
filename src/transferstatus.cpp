@@ -10,7 +10,7 @@
 TransferStatus::TransferStatus(int transferid, int type, const std::string& source, const std::string& target,
     const std::string& jobname, const std::string& file, const std::shared_ptr<FileList>& fls,
     const Path& sourcepath, const std::shared_ptr<FileList>& fld, const Path& targetpath,
-    unsigned long long int sourcesize, unsigned int assumedspeed, int srcslot,
+    unsigned long long int sourcesize, unsigned long long int assumedspeed, int srcslot,
     int dstslot, bool ssl, bool defaultactive) :
     type(type), transferid(transferid), source(source), target(target), jobname(jobname), file(file),
     timestamp(global->getTimeReference()->getCurrentLogTimeStamp()), sourcepath(sourcepath),
@@ -21,12 +21,12 @@ TransferStatus::TransferStatus(int transferid, int type, const std::string& sour
     ssl(ssl), defaultactive(defaultactive), passiveaddr("-"), cipher("-"), sslsessionreused(false)
 {
   if (!this->speed) {
-    this->speed = 1024;
+    this->speed = 1024 * 1024;
   }
   if (!this->sourcesize) {
     this->sourcesize = 1;
   }
-  this->timeremaining = this->sourcesize / (this->speed * 1024);
+  this->timeremaining = this->sourcesize / this->speed;
 }
 
 TransferStatus::~TransferStatus() {
@@ -80,7 +80,7 @@ unsigned long long int TransferStatus::knownTargetSize() const {
   return knowntargetsize;
 }
 
-unsigned int TransferStatus::getSpeed() const {
+unsigned long long int TransferStatus::getSpeed() const {
   return speed;
 }
 
@@ -232,7 +232,7 @@ void TransferStatus::updateProgress() {
     progress = 100;
   }
 }
-void TransferStatus::setSpeed(unsigned int speed) {
+void TransferStatus::setSpeed(unsigned long long int speed) {
   this->speed = speed;
   if (!this->speed) {
     this->speed = 10;
@@ -242,7 +242,7 @@ void TransferStatus::setSpeed(unsigned int speed) {
 void TransferStatus::setTimeSpent(unsigned int timespent) {
   this->timespent = timespent;
   if (sourcesize > interpolatedtargetsize) {
-    timeremaining = (sourcesize - interpolatedtargetsize) / (speed * 1024);
+    timeremaining = (sourcesize - interpolatedtargetsize) / speed;
   }
   else {
     timeremaining = -1;

@@ -12,6 +12,7 @@
 #include "../../globalcontext.h"
 #include "../../sitelogicmanager.h"
 #include "../../sitelogic.h"
+#include "../../timereference.h"
 #include "../../transfermanager.h"
 
 TransferStatusScreen::TransferStatusScreen(Ui* ui) : UIWindow(ui, "TransferStatusScreen") {
@@ -40,8 +41,9 @@ void TransferStatusScreen::redraw() {
   unsigned int y = 1;
   int type = ts->getType();
   vv->putStr(y, 1, "Started: " + ts->getTimestamp());
+  bool timestampms = global->getTimeReference()->getTimeStampMilliseconds();
   std::string route = ts->getSource() + " -> " + ts->getTarget();
-  vv->putStr(y, 20, "Route: " + route);
+  vv->putStr(y, timestampms ? 24 : 20, "Route: " + route);
   ++y;
   vv->putStr(y, 1, "Job name: " + ts->getJobName());
   ++y;
@@ -111,15 +113,16 @@ void TransferStatusScreen::redraw() {
   vv->putStr(y, 57, "Status: " + progress);
   ++y;
   vv->putStr(y, 1, "Time spent: " + td.timespent);
-  vv->putStr(y, 21, "Remaining: " + td.timeremaining);
+  int base = timestampms ? 4 : 0;
+  vv->putStr(y, base + 21, "Remaining: " + td.timeremaining);
 
   int progresspercent = ts->getProgress();
   progress = "....................";
   int charswithhighlight = progress.length() * progresspercent / 100;
-  vv->putStr(y, 47, "[");
-  vv->putStr(y, 48, progress.substr(0, charswithhighlight), true);
-  vv->putStr(y, 48 + charswithhighlight, progress.substr(charswithhighlight));
-  vv->putStr(y, 48 + progress.length(), "] " + std::to_string(progresspercent) + "%");
+  vv->putStr(y, base + 47, "[");
+  vv->putStr(y, base + 48, progress.substr(0, charswithhighlight), true);
+  vv->putStr(y, base + 48 + charswithhighlight, progress.substr(charswithhighlight));
+  vv->putStr(y, base + 48 + progress.length(), "] " + std::to_string(progresspercent) + "%");
   ++y;
   ++y;
   for (std::list<std::string>::const_iterator it = ts->getLogLines().begin(); it != ts->getLogLines().end(); it++) {

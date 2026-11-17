@@ -159,11 +159,11 @@ std::map<std::string, Path>::const_iterator Site::sectionsEnd() const {
   return sections.end();
 }
 
-std::map<std::string, int>::const_iterator Site::avgspeedBegin() const {
+std::map<std::string, unsigned long long int>::const_iterator Site::avgspeedBegin() const {
   return avgspeed.begin();
 }
 
-std::map<std::string, int>::const_iterator Site::avgspeedEnd() const {
+std::map<std::string, unsigned long long int>::const_iterator Site::avgspeedEnd() const {
   return avgspeed.end();
 }
 
@@ -266,44 +266,48 @@ bool Site::unlimitedDown() const {
   return maxdn == -1;
 }
 
-int Site::getAverageSpeed(const std::string& target) const {
-  std::map<std::string, int>::const_iterator it = avgspeed.find(target);
-  if (it == avgspeed.end()) return 1024;
+unsigned long long int Site::getAverageSpeed(const std::string& target) const {
+  std::map<std::string, unsigned long long int>::const_iterator it = avgspeed.find(target);
+  if (it == avgspeed.end()) {
+    return 1024 * 1024; // default to 1 MB/s
+  }
   return it->second;
 }
 
-void Site::setAverageSpeed(const std::string& target, int speed) {
-  std::map<std::string, int>::iterator it = avgspeed.find(target);
-  if (it != avgspeed.end()) avgspeed.erase(it);
+void Site::setAverageSpeed(const std::string& target, unsigned long long int speed) {
+  std::map<std::string, unsigned long long int>::iterator it = avgspeed.find(target);
+  if (it != avgspeed.end()) {
+    avgspeed.erase(it);
+  }
   avgspeed[target] = speed;
 }
 
-void Site::pushTransferSpeed(const std::string& target, int speed, unsigned long long int size) {
-  std::map<std::string, int>::iterator it = avgspeed.find(target);
-  int oldspeed;
+void Site::pushTransferSpeed(const std::string& target, unsigned long long int speed, unsigned long long int size) {
+  std::map<std::string, unsigned long long int>::iterator it = avgspeed.find(target);
+  unsigned long long int oldspeed;
   if (it == avgspeed.end()) {
-    oldspeed = 1024;
-    avgspeedsamples[target] = std::pair<int, unsigned long long int>(0, 0);
+    oldspeed = 1024 * 1024; // default to 1 MB/s
+    avgspeedsamples[target] = std::pair<unsigned long long int, unsigned long long int>(0, 0);
   }
   else {
     oldspeed = it->second;
     avgspeed.erase(it);
   }
-  avgspeed[target] = (int) ((speed / 5) + (oldspeed * 0.8));
+  avgspeed[target] = (unsigned long long int) ((speed / 5) + (oldspeed * 0.8));
   ++avgspeedsamples[target].first;
   avgspeedsamples[target].second += size;
 }
 
-std::pair<int, unsigned long long int> Site::getAverageSpeedSamples(const std::string& target) const {
-  std::map<std::string, std::pair<int, unsigned long long int> >::const_iterator it = avgspeedsamples.find(target);
+std::pair<unsigned long long int, unsigned long long int> Site::getAverageSpeedSamples(const std::string& target) const {
+  std::map<std::string, std::pair<unsigned long long int, unsigned long long int> >::const_iterator it = avgspeedsamples.find(target);
   if (it != avgspeedsamples.end()) {
     return it->second;
   }
-  return std::pair<int, unsigned long long int>(0, 0);
+  return std::pair<unsigned long long int, unsigned long long int>(0, 0);
 }
 
 void Site::resetAverageSpeedSamples(const std::string& target) {
-  std::map<std::string, std::pair<int, unsigned long long int> >::iterator it = avgspeedsamples.find(target);
+  std::map<std::string, std::pair<unsigned long long int, unsigned long long int> >::iterator it = avgspeedsamples.find(target);
   if (it != avgspeedsamples.end()) {
     it->second.first = 0;
     it->second.second = 0;

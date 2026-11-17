@@ -96,8 +96,8 @@ private:
   RefreshRate refreshrate;
   bool xdupe;
   std::map<std::string, Path> sections;
-  std::map<std::string, int> avgspeed;
-  std::map<std::string, std::pair<int, unsigned long long int>> avgspeedsamples;
+  std::map<std::string, unsigned long long int> avgspeed;
+  std::map<std::string, std::pair<unsigned long long int, unsigned long long int>> avgspeedsamples;
   std::set<std::string, util::naturalComparator> affils;
   std::set<std::shared_ptr<Site>> exceptsourcesites;
   std::set<std::shared_ptr<Site>> excepttargetsites;
@@ -128,8 +128,8 @@ public:
   Site(const Site &);
   std::map<std::string, Path, util::naturalComparator>::const_iterator sectionsBegin() const;
   std::map<std::string, Path, util::naturalComparator>::const_iterator sectionsEnd() const;
-  std::map<std::string, int>::const_iterator avgspeedBegin() const;
-  std::map<std::string, int>::const_iterator avgspeedEnd() const;
+  std::map<std::string, unsigned long long int>::const_iterator avgspeedBegin() const;
+  std::map<std::string, unsigned long long int>::const_iterator avgspeedEnd() const;
   unsigned int getMaxLogins() const;
   unsigned int getMaxUp() const;
   unsigned int getMaxDown() const;
@@ -147,11 +147,11 @@ public:
   bool unlimitedLogins() const;
   bool unlimitedUp() const;
   bool unlimitedDown() const;
-  int getAverageSpeed(const std::string &) const;
-  void setAverageSpeed(const std::string &, int);
-  void pushTransferSpeed(const std::string &, int, unsigned long long int);
-  std::pair<int, unsigned long long int> getAverageSpeedSamples(const std::string &) const;
-  void resetAverageSpeedSamples(const std::string &);
+  unsigned long long int getAverageSpeed(const std::string& target) const;
+  void setAverageSpeed(const std::string& target, unsigned long long int speed);
+  void pushTransferSpeed(const std::string& target, unsigned long long int speed, unsigned long long int size);
+  std::pair<unsigned long long int, unsigned long long int> getAverageSpeedSamples(const std::string& target) const;
+  void resetAverageSpeedSamples(const std::string& target);
   bool needsPRET() const;
   void setPRET(bool);
   bool forceBinaryMode() const;

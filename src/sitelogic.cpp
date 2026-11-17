@@ -624,6 +624,14 @@ void SiteLogic::commandSuccess(int id, FTPConnState state) {
           else {
             conns[id]->doCWD(targetpath, currentco);
           }
+          // there may be other conns waiting for this mkd to finish
+          if (currentco->classType() == COMMANDOWNER_TRANSFERJOB) {
+            std::shared_ptr<TransferJob> tj = std::static_pointer_cast<SiteTransferJob>(currentco)->getTransferJob().lock();
+            haveConnectedActivate(tj->maxSlots());
+          }
+          else if (currentco->classType() == COMMANDOWNER_SITERACE) {
+            activateAll();
+          }
           return;
         }
         if (makeTargetDirectory(id, true, currentco)) {
@@ -846,10 +854,6 @@ void SiteLogic::commandFail(int id, FailureType failuretype) {
         handleConnection(id);
         return;
       }
-      if (currentco && currentco->classType() == COMMANDOWNER_TRANSFERJOB) {
-        handleConnection(id);
-        return;
-      }
       if (connstatetracker[id].hasTransfer() && !connstatetracker[id].transferInitialized()) {
         handleConnection(id);
         return;
@@ -874,6 +878,14 @@ void SiteLogic::commandFail(int id, FailureType failuretype) {
         }
         else {
           conns[id]->doCWD(targetpath, currentco);
+        }
+        // there may be other conns waiting for this mkd to finish
+        if (currentco->classType() == COMMANDOWNER_TRANSFERJOB) {
+          std::shared_ptr<TransferJob> tj = std::static_pointer_cast<SiteTransferJob>(currentco)->getTransferJob().lock();
+          haveConnectedActivate(tj->maxSlots());
+        }
+        else if (currentco->classType() == COMMANDOWNER_SITERACE) {
+          activateAll();
         }
         return;
       }
@@ -2603,10 +2615,7 @@ void SiteLogic::setRequestReady(unsigned int id, void* data, bool status, bool r
   if (returnslot && !connstatetracker[id].isTransferLocked()) {
     available++;
   }
-  if (cb) {
-    cb->requestReady(this, requestid);
-  }
-  else {
+  if (!cb || !cb->requestReady(this, requestid)) {
     finishRequest(requestid);
   }
 }

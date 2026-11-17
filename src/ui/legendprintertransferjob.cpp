@@ -30,7 +30,7 @@ bool LegendPrinterTransferJob::print() {
                              " / " + util::parseSize(transferjob->totalSize());
   std::string filesprogress = std::to_string(transferjob->filesProgress()) + "/" +
                               std::to_string(transferjob->filesTotal());
-  std::string speed = started ? util::parseSize(transferjob->getSpeed() * SIZEPOWER) + "/s" : "-";
+  std::string speed = started ? util::parseSize(transferjob->getSpeed()) + "/s" : "-";
   std::string progress = std::to_string(transferjob->getProgress()) + "%";
   std::string status;
   switch (transferjob->getStatus()) {

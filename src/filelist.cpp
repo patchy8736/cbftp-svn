@@ -112,7 +112,7 @@ bool FileList::updateFileInternal(File* file) {
     updatefile->setTouch(file->getTouch());
     if (updatefile->updateFlagSet()) {
       unsigned long long int size = oldsize;
-      unsigned int speed = updatefile->getUpdateSpeed();
+      unsigned long long int speed = updatefile->getUpdateSpeed();
       const std::shared_ptr<Site> & src = updatefile->getUpdateSrc();
       const std::shared_ptr<Site> & dst = updatefile->getUpdateDst();
       if (util::eightCharUserCompare(username, updatefile->getOwner())) {
@@ -210,9 +210,10 @@ void FileList::removeFile(const std::string & name) {
   scoreboardchangedfiles.insert(name);
 }
 
-void FileList::setFileUpdateFlag(const std::string & name,
-    unsigned long long int size, unsigned int speed, const std::shared_ptr<Site> & src,
-    const std::shared_ptr<Site> & dst, const std::shared_ptr<CommandOwner> & srcco, const std::shared_ptr<CommandOwner> & dstco)
+void FileList::setFileUpdateFlag(const std::string& name,
+    unsigned long long int size, unsigned long long int speed, const std::shared_ptr<Site>& src,
+    const std::shared_ptr<Site>& dst, const std::shared_ptr<CommandOwner>& srcco,
+    const std::shared_ptr<CommandOwner>& dstco)
 {
   File * file;
   if ((file = getFileCaseSensitive(name)) != NULL) {

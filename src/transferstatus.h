@@ -29,7 +29,7 @@ public:
   TransferStatus(int transferid, int type, const std::string& source, const std::string& target,
       const std::string& jobname, const std::string& file, const std::shared_ptr<FileList>& fls,
       const Path& sourcepath, const std::shared_ptr<FileList>& fld, const Path& targetpath,
-      unsigned long long int sourcesize, unsigned int assumedspeed, int srcslot,
+      unsigned long long int sourcesize, unsigned long long int assumedspeed, int srcslot,
       int dstslot, bool ssl, bool defaultactive);
   ~TransferStatus();
   int getTransferId() const;
@@ -44,7 +44,7 @@ public:
   unsigned long long int sourceSize() const;
   unsigned long long int targetSize() const;
   unsigned long long int knownTargetSize() const;
-  unsigned int getSpeed() const;
+  unsigned long long int getSpeed() const;
   unsigned int getTimeSpent() const;
   int getTimeRemaining() const;
   unsigned int getProgress() const;
@@ -70,7 +70,7 @@ public:
   void setCallback(TransferStatusCallback*);
   void setTargetSize(unsigned long long int);
   void interpolateAddSize(unsigned long long int);
-  void setSpeed(unsigned int);
+  void setSpeed(unsigned long long int);
   void setTimeSpent(unsigned int);
   void setPassiveAddress(const std::string&);
   void setCipher(const std::string&);
@@ -92,7 +92,7 @@ private:
   unsigned long long int knowntargetsize;
   unsigned long long int interpolatedtargetsize;
   unsigned long long int interpolationfilltargetsize;
-  unsigned int speed;
+  unsigned long long int speed;
   int state;
   unsigned int timespent;
   int timeremaining;

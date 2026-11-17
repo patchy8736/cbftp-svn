@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <cerrno>
+#include <cassert>
 
 #include "core/iomanager.h"
 #include "core/tickpoke.h"
@@ -13,12 +14,12 @@
 LocalTransfer::LocalTransfer() :
   buflen(0),
   timeoutticker(false),
-  inuse(false)
+  state(LocalTransferState::INACTIVE)
 {
 }
 
 bool LocalTransfer::active() const {
-  return inuse;
+  return state != LocalTransferState::INACTIVE;
 }
 
 void LocalTransfer::FDInterNew(int sockid, int newsockid) {
@@ -75,7 +76,7 @@ FTPConn * LocalTransfer::getConn() const {
 }
 
 void LocalTransfer::activate(int localtransferid) {
-  inuse = true;
+  state = LocalTransferState::RESERVED;
   this->localtransferid = localtransferid;
   timeoutticker = false;
   if (!passivemode) {
@@ -84,15 +85,11 @@ void LocalTransfer::activate(int localtransferid) {
   }
 }
 
-void LocalTransfer::reserve() {
-  inuse = true;
-}
-
 void LocalTransfer::deactivate() {
-  if (!inuse) {
+  if (!active()) {
     return;
   }
-  inuse = false;
+  state = LocalTransferState::INACTIVE;
   sockid = -1;
   if (timeoutticker) {
     global->getTickPoke()->stopPoke(this, 0);

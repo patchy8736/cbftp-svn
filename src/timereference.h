@@ -10,12 +10,12 @@ public:
   unsigned long long timePassedSince(unsigned long long) const;
   std::string getCurrentFullTimeStamp() const;
   std::string getCurrentLogTimeStamp() const;
-  bool getLogTimeStampMilliseconds() const;
-  void setLogTimeStampMilliseconds(bool ms);
+  bool getTimeStampMilliseconds() const;
+  void setTimeStampMilliseconds(bool ms);
 private:
   std::string getCurrentTimeStamp(bool includedate) const;
   unsigned long long timeticker;
-  bool logtimestampms;
+  bool timestampms;
 
 public:
   static void updateTime();

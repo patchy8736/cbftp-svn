@@ -67,9 +67,9 @@ class TransferMonitor : public Core::EventReceiver, public RawBufferCallback {
     bool sourcesslclient;
     bool ipv6;
     TransferMonitorType type;
-    int timestamp;
-    int startstamp;
-    int partialcompletestamp;
+    unsigned long long int timestamp;
+    unsigned long long int startstamp;
+    unsigned long long int partialcompletestamp;
     TransferManager * tm;
     std::shared_ptr<TransferStatus> ts;
     int latestsrctouch;
@@ -87,7 +87,7 @@ class TransferMonitor : public Core::EventReceiver, public RawBufferCallback {
     void setTargetSizeSpeed(unsigned long long int, int);
     void reset();
     void transferFailed(const std::shared_ptr<TransferStatus> &, TransferError);
-    void updateFXPSizeSpeed();
+    void updateFXPSizeSpeed(bool interpolate);
     void updateLocalTransferSizeSpeed();
     bool checkForDeadFXPTransfers();
     bool checkMaxTransferTime();

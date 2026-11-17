@@ -468,7 +468,7 @@ bool SiteRace::listsChangedSinceLastCheck() {
   return changed;
 }
 
-void SiteRace::addTransferStatsFile(StatsDirection direction, const std::string& other, unsigned long long int size, unsigned int speed) {
+void SiteRace::addTransferStatsFile(StatsDirection direction, const std::string& other, unsigned long long int size, unsigned long long int speed) {
   std::shared_ptr<Race> srace = race.lock();
   if (!srace) {
     return;
@@ -526,7 +526,7 @@ unsigned int SiteRace::getFilesDown() const {
   return filesdown;
 }
 
-unsigned int SiteRace::getSpeedDown() const {
+unsigned long long int SiteRace::getSpeedDown() const {
   return speeddown;
 }
 
@@ -538,7 +538,7 @@ unsigned int SiteRace::getFilesUp() const {
   return filesup;
 }
 
-unsigned int SiteRace::getSpeedUp() const {
+unsigned long long int SiteRace::getSpeedUp() const {
   return speedup;
 }
 
@@ -563,7 +563,7 @@ std::unordered_map<std::string, unsigned int>::const_iterator SiteRace::filesUpB
   return sitesfilesup.begin();
 }
 
-std::unordered_map<std::string, unsigned int>::const_iterator SiteRace::speedUpBegin() const {
+std::unordered_map<std::string, unsigned long long int>::const_iterator SiteRace::speedUpBegin() const {
   return sitesspeedup.begin();
 }
 
@@ -575,7 +575,7 @@ std::unordered_map<std::string, unsigned int>::const_iterator SiteRace::filesDow
   return sitesfilesdown.begin();
 }
 
-std::unordered_map<std::string, unsigned int>::const_iterator SiteRace::speedDownBegin() const {
+std::unordered_map<std::string, unsigned long long int>::const_iterator SiteRace::speedDownBegin() const {
   return sitesspeeddown.begin();
 }
 
@@ -587,7 +587,7 @@ std::unordered_map<std::string, unsigned int>::const_iterator SiteRace::filesUpE
   return sitesfilesup.end();
 }
 
-std::unordered_map<std::string, unsigned int>::const_iterator SiteRace::speedUpEnd() const {
+std::unordered_map<std::string, unsigned long long int>::const_iterator SiteRace::speedUpEnd() const {
   return sitesspeedup.end();
 }
 
@@ -599,7 +599,7 @@ std::unordered_map<std::string, unsigned int>::const_iterator SiteRace::filesDow
   return sitesfilesdown.end();
 }
 
-std::unordered_map<std::string, unsigned int>::const_iterator SiteRace::speedDownEnd() const {
+std::unordered_map<std::string, unsigned long long int>::const_iterator SiteRace::speedDownEnd() const {
   return sitesspeeddown.end();
 }
 

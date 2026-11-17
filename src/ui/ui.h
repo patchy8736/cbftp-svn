@@ -178,7 +178,7 @@ private:
   void setLegendText(const std::string& legendtext);
   void FDData(int sockid) override;
   void tick(int message) override;
-  void requestReady(void* service, int requestid) override;
+  bool requestReady(void* service, int requestid) override;
   void intermediateData(void* service, int requestid, void* data) override;
 public:
   Ui();

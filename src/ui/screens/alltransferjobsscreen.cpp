@@ -18,6 +18,7 @@
 #include "../../transferjob.h"
 #include "../../site.h"
 #include "../../sitelogic.h"
+#include "../../timereference.h"
 
 namespace {
 
@@ -605,7 +606,7 @@ void AllTransferJobsScreen::addJobTableHeader(unsigned int y, MenuSelectOption &
 }
 
 void AllTransferJobsScreen::addJobDetails(unsigned int y, MenuSelectOption & mso, std::shared_ptr<TransferJob> tj) {
-  std::string timespent = util::simpleTimeFormat(tj->timeSpent());
+  std::string timespent = util::simpleTimeFormat(tj->timeSpentMillis(), global->getTimeReference()->getTimeStampMilliseconds());
   bool running = tj->getStatus() == TRANSFERJOB_RUNNING;
   bool started = tj->getStatus() != TRANSFERJOB_QUEUED;
   std::string timeremaining = running ? util::simpleTimeFormat(tj->timeRemaining()) : "-";
@@ -614,7 +615,7 @@ void AllTransferJobsScreen::addJobDetails(unsigned int y, MenuSelectOption & mso
                              " / " + util::parseSize(tj->totalSize());
   std::string filesprogress = std::to_string(tj->filesProgress()) + "/" +
                               std::to_string(tj->filesTotal());
-  std::string speed = started ? util::parseSize(tj->getSpeed() * SIZEPOWER) + "/s" : "-";
+  std::string speed = started ? util::parseSize(tj->getSpeed()) + "/s" : "-";
   std::string progress = std::to_string(tj->getProgress()) + "%";
   std::string status;
   switch (tj->getStatus()) {
