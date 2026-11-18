@@ -44,6 +44,10 @@ class TransferManager {
     std::shared_ptr<TransferStatus> attemptUpload(
       const std::string &, const std::shared_ptr<LocalFileList> &,
       const std::shared_ptr<SiteLogic> &, const std::shared_ptr<FileList>& fld, const std::shared_ptr<CommandOwner> &);
+    std::shared_ptr<TransferStatus> attemptInMemoryTransfer(
+      const std::string &, const std::shared_ptr<SiteLogic> &, const std::shared_ptr<FileList>& fls,
+      const std::shared_ptr<SiteLogic> &, const std::shared_ptr<FileList>& fld,
+      const std::shared_ptr<CommandOwner> &, const std::shared_ptr<CommandOwner> &);
     void transferSuccessful(const std::shared_ptr<TransferStatus> &);
     void transferFailed(const std::shared_ptr<TransferStatus> &, int);
     std::list<std::shared_ptr<TransferStatus> >::const_iterator ongoingTransfersBegin() const;
@@ -59,4 +63,5 @@ class TransferManager {
     int getMaxTransferTimeSeconds() const;
     void setMaxTransferTimeSeconds(int seconds);
     void abortTransfer(int transferid);
+    bool inMemoryTransferInProgress() const;
 };

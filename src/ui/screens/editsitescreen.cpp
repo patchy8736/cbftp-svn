@@ -159,6 +159,7 @@ void EditSiteScreen::initialize(unsigned int row, unsigned int col, const std::s
   mso.addCheckBox(y, x, "cepr", "CEPR supported:", this->site->supportsCEPR());
   mso.addCheckBox(y, x + 21, "sscn", "SSCN supported:", this->site->supportsSSCN());
   mso.addCheckBox(y++, x + 42, "cpsv", "CPSV supported:", this->site->supportsCPSV());
+  mso.addCheckBox(y++, x, "inmemorytransfer", "In-memory transfer (no FXP):", this->site->inMemoryTransfer());
   mso.addCheckBox(y, x, "binary", "Force binary mode:", this->site->forceBinaryMode());
   mso.addCheckBox(y++, x + 23, "brokenpasv", "Broken PASV:", this->site->hasBrokenPASV());
   mso.addStringField(y, x, "idletime", "Max idle time (s):", std::to_string(this->site->getMaxIdleTime()), false, 4);
@@ -480,6 +481,9 @@ bool EditSiteScreen::keyPressed(unsigned int ch) {
         }
         else if (identifier == "cpsv") {
           site->setSupportsCPSV(std::static_pointer_cast<MenuSelectOptionCheckBox>(msoe)->getData());
+        }
+        else if (identifier == "inmemorytransfer") {
+          site->setInMemoryTransfer(std::static_pointer_cast<MenuSelectOptionCheckBox>(msoe)->getData());
         }
         else if (identifier == "cepr") {
           site->setSupportsCEPR(std::static_pointer_cast<MenuSelectOptionCheckBox>(msoe)->getData());

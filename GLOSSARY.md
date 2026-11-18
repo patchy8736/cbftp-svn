@@ -50,10 +50,10 @@ _Avoid_: progress, completeness
 
 ### Transfers
 
+**In-memory transfer**:
+Site-to-site transfer routed through the client's RAM instead of FXP (download fully into memory, upload from memory, free), used when either site has the `inmemorytransfer` flag; never touches local disk.
+_Avoid_: cache, RAM transfer
+
 **FXP**:
 Server-to-server transfer between two sites; data flows directly between the servers, never through the client.
 _Avoid_: site-to-site transfer
-
-**In-memory transfer**:
-Site-to-site transfer routed through the client's RAM instead of FXP; files never touch local disk.
-_Avoid_: memory cache, RAM transfer, memxfer

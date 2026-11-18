@@ -75,7 +75,7 @@ void LocalUpload::FDInterConnected(int sockid) {
   if (passivemode) {
     tm->activeStarted();
   }
-  if (!openFile(true)) {
+  if (!beginSource()) {
     return;
   }
   if (!ssl) {
@@ -105,6 +105,10 @@ void LocalUpload::FDSSLSuccess(int sockid, const std::string& cipher) {
   bool sessionreused = global->getIOManager()->getSSLSessionReused(sockid);
   tm->sslDetails(cipher, sessionreused);
   sendChunk();
+}
+
+bool LocalUpload::beginSource() {
+  return openFile(true);
 }
 
 void LocalUpload::sendChunk() {

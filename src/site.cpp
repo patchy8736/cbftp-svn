@@ -83,6 +83,7 @@ Site::Site(const std::string& name) :
   sscnsupported(true),
   cpsvsupported(true),
   ceprsupported(true),
+  inmemorytransfer(false),
   brokenpasv(false),
   disabled(false),
   allowupload(SITE_ALLOW_TRANSFER_YES),
@@ -129,6 +130,7 @@ Site::Site(const Site& other) {
   sscnsupported = other.sscnsupported;
   cpsvsupported = other.cpsvsupported;
   ceprsupported = other.ceprsupported;
+  inmemorytransfer = other.inmemorytransfer;
   brokenpasv = other.brokenpasv;
   disabled = other.disabled;
   allowupload = other.allowupload;
@@ -426,6 +428,14 @@ void Site::setSupportsCPSV(bool supported) {
 
 void Site::setSupportsCEPR(bool supported) {
   ceprsupported = supported;
+}
+
+bool Site::inMemoryTransfer() const {
+  return inmemorytransfer;
+}
+
+void Site::setInMemoryTransfer(bool inmemory) {
+  inmemorytransfer = inmemory;
 }
 
 int Site::getListCommand() const {

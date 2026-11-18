@@ -66,6 +66,16 @@ std::shared_ptr<TransferStatus> TransferManager::attemptUpload(
   return target->getTransferStatus();
 }
 
+std::shared_ptr<TransferStatus> TransferManager::attemptInMemoryTransfer(
+  const std::string & name, const std::shared_ptr<SiteLogic> & src, const std::shared_ptr<FileList>& fls,
+  const std::shared_ptr<SiteLogic> & dst, const std::shared_ptr<FileList>& fld,
+  const std::shared_ptr<CommandOwner> & srcco, const std::shared_ptr<CommandOwner> & dstco)
+{
+  std::shared_ptr<TransferMonitor> target = getAvailableTransferMonitor();
+  target->engageInMemory(nexttransferid++, name, src, fls, dst, fld, srcco, dstco);
+  return target->getTransferStatus();
+}
+
 std::shared_ptr<TransferMonitor> TransferManager::getAvailableTransferMonitor() {
   std::shared_ptr<TransferMonitor> target;
   std::list<std::shared_ptr<TransferMonitor> >::iterator it;
@@ -178,4 +188,13 @@ void TransferManager::abortTransfer(int transferid) {
       (*it)->abortTransfer();
     }
   }
+}
+
+bool TransferManager::inMemoryTransferInProgress() const {
+  for (std::list<std::shared_ptr<TransferMonitor> >::const_iterator it = transfermonitors.begin(); it != transfermonitors.end(); it++) {
+    if (!(*it)->idle() && (*it)->getType() == TM_TYPE_INMEMORY) {
+      return true;
+    }
+  }
+  return false;
 }

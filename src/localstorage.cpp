@@ -4,6 +4,7 @@
 #include "core/workmanager.h"
 #include "localdownload.h"
 #include "localupload.h"
+#include "localmemoryupload.h"
 #include "transfermonitor.h"
 #include "localfilelist.h"
 #include "eventlog.h"
@@ -71,6 +72,12 @@ LocalTransfer* LocalStorage::preparePassiveUpload(TransferMonitor* tm) {
   return static_cast<LocalTransfer*>(lu);
 }
 
+LocalTransfer* LocalStorage::preparePassiveMemoryUpload(TransferMonitor* tm) {
+  LocalMemoryUpload* lmu = getAvailableLocalMemoryUpload();
+  lmu->reserve(tm);
+  return static_cast<LocalTransfer*>(lmu);
+}
+
 void LocalStorage::passiveModeDownload(TransferMonitor* tm, LocalTransfer* lt, const std::string& file, bool ipv6, const std::string& host, int port, bool ssl, FTPConn* ftpconn) {
   passiveModeDownload(tm, static_cast<LocalDownload*>(lt), temppath, file, ipv6, host, port, ssl, ftpconn);
 }
@@ -86,6 +93,10 @@ void LocalStorage::passiveModeDownload(TransferMonitor* tm, LocalTransfer* lt, b
 
 void LocalStorage::passiveModeUpload(TransferMonitor* tm, LocalTransfer* lt, const Path& path, const std::string& file, bool ipv6, const std::string& host, int port, bool ssl, FTPConn* ftpconn) {
   static_cast<LocalUpload*>(lt)->engage(tm, nextlocaltransferid++, path, file, ipv6, host, port, ssl, ftpconn);
+}
+
+void LocalStorage::passiveModeMemoryUpload(TransferMonitor* tm, LocalTransfer* lt, int storeid, bool ipv6, const std::string& host, int port, bool ssl, FTPConn* ftpconn) {
+  static_cast<LocalMemoryUpload*>(lt)->engageStore(tm, nextlocaltransferid++, storeid, ipv6, host, port, ssl, ftpconn);
 }
 
 LocalTransfer* LocalStorage::activeModeDownload(TransferMonitor* tm, const Path& path, const std::string& file, bool ipv6, bool ssl, FTPConn* ftpconn) {
@@ -111,6 +122,15 @@ LocalTransfer* LocalStorage::activeModeUpload(TransferMonitor* tm, const Path& p
   LocalUpload* lu = getAvailableLocalUpload();
   if (lu->engage(tm, nextlocaltransferid++, path, file, ipv6, ssl, ftpconn)) {
     return lu;
+  }
+  global->getEventLog()->log("LocalStorage", "Error: no local ports available for active mode");
+  return nullptr;
+}
+
+LocalTransfer* LocalStorage::activeModeMemoryUpload(TransferMonitor* tm, int storeid, bool ipv6, bool ssl, FTPConn* ftpconn) {
+  LocalMemoryUpload* lmu = getAvailableLocalMemoryUpload();
+  if (lmu->engageStore(tm, nextlocaltransferid++, storeid, ipv6, ssl, ftpconn)) {
+    return lmu;
   }
   global->getEventLog()->log("LocalStorage", "Error: no local ports available for active mode");
   return nullptr;
@@ -147,6 +167,21 @@ LocalUpload * LocalStorage::getAvailableLocalUpload() {
   return lu;
 }
 
+LocalMemoryUpload * LocalStorage::getAvailableLocalMemoryUpload() {
+  LocalMemoryUpload * lmu = NULL;
+  for (std::list<LocalMemoryUpload *>::iterator it = localmemoryuploads.begin(); it != localmemoryuploads.end(); it++) {
+    if (!(*it)->active()) {
+      lmu = *it;
+      break;
+    }
+  }
+  if (lmu == NULL) {
+    lmu = new LocalMemoryUpload(this);
+    localmemoryuploads.push_back(lmu);
+  }
+  return lmu;
+}
+
 Core::BinaryData LocalStorage::getTempFileContent(const std::string & filename) const {
   return getFileContent(temppath / filename);
 }
@@ -167,6 +202,10 @@ const Core::BinaryData & LocalStorage::getStoreContent(int storeid) const {
     return it->second;
   }
   return emptydata;
+}
+
+bool LocalStorage::hasStoreContent(int storeid) const {
+  return content.find(storeid) != content.end();
 }
 
 void LocalStorage::purgeStoreContent(int storeid) {
@@ -393,8 +432,22 @@ void LocalStorage::setDownloadPath(const Path & path) {
   downloadpath = path;
 }
 
-void LocalStorage::storeContent(int storeid, const Core::BinaryData & data) {
-  content[storeid] = data;
+unsigned char* LocalStorage::reserveStoreContent(int storeid, unsigned long long int size) {
+  Core::BinaryData& data = content[storeid];
+  if (data.size() < size) {
+    // geometric growth for unreserved uploads; in-memory transfers pre-reserve
+    // the exact file size at engage time so no reallocation happens mid-download
+    data.reserve(size > data.capacity() * 2 ? size : data.capacity() * 2);
+    data.resize(size);
+  }
+  return data.data();
+}
+
+void LocalStorage::setStoreContentSize(int storeid, unsigned long long int size) {
+  Core::BinaryData& data = content[storeid];
+  if (data.size() != size) {
+    data.resize(size);
+  }
 }
 
 std::shared_ptr<LocalFileList> LocalStorage::getLocalFileList(const Path & path) {

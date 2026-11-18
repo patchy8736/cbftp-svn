@@ -18,9 +18,12 @@ private:
   void FDSSLSuccess(int sockid, const std::string& cipher) override;
   void FDInterSendComplete(int sockid) override;
   void FDInterListening(int sockid, const Address& addr) override;
-  void FDFail(int sockid, const std::string& error) override;
   void disconnect() override;
+protected:
+  void FDFail(int sockid, const std::string& error) override;
   void init(TransferMonitor* tm, int localtransferid, FTPConn* ftpconn, const Path& path, const std::string& filename, bool ssl, bool passivemode, int port = 0);
-  void sendChunk();
+  // hooks for memory-sourced uploads (LocalMemoryUpload); default source is a file on disk
+  virtual bool beginSource();
+  virtual void sendChunk();
   unsigned long long int filepos;
 };

@@ -226,6 +226,7 @@ std::list<std::shared_ptr<TransferStatus>>::const_iterator TransferJob::transfer
 void TransferJob::init(unsigned int id, TransferJobType type, const std::shared_ptr<SiteLogic>& srcsl, const std::shared_ptr<SiteLogic>& dstsl, const Path& srcpath, const Path& dstpath, const std::string& srcsection, const std::string& dstsection, const std::string& srcfile, const std::string& dstfile) {
   this->id = id;
   this->type = type;
+  this->inmemory = false;
   this->src = srcsl;
   this->dst = dstsl;
   this->srcpath = srcpath;
@@ -255,6 +256,17 @@ std::string TransferJob::getDstFileName() const {
 
 CallbackType TransferJob::callbackType() const {
   return CallbackType::TRANSFERJOB;
+}
+
+bool TransferJob::inMemory() const {
+  return inmemory;
+}
+
+void TransferJob::setInMemory(bool inmemory) {
+  this->inmemory = inmemory;
+  if (inmemory) {
+    slots = 1; // ctor computed slots before the flag was set
+  }
 }
 
 int TransferJob::getType() const {
@@ -494,6 +506,9 @@ int TransferJob::maxPossibleSlots() const {
     case TRANSFERJOB_UPLOAD:
       return std::min(global->getLocalStorage()->getMaxUploadSlots(), dst->getSite()->getMaxUp());
     case TRANSFERJOB_FXP:
+      if (inmemory) {
+        return 1; // in-memory transfers are sequential: one file at a time
+      }
       return std::min(src->getSite()->getMaxDownTransferJob(), dst->getSite()->getMaxUp());
     case TRANSFERJOB_DOWNLOAD:
       return std::min(global->getLocalStorage()->getMaxDownloadSlots(), src->getSite()->getMaxDownTransferJob());

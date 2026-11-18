@@ -22,6 +22,7 @@
 #include "filesystem.h"
 #include "statistics.h"
 #include "transferprotocol.h"
+#include "transferpath.h"
 #include "timereference.h"
 
 // max time to wait for the other site to fail after a failure has happened
@@ -38,11 +39,15 @@
 TransferMonitor::TransferMonitor(TransferManager * tm) :
   transferid(0),
   status(TM_STATUS_IDLE),
+  src(-1),
+  dst(-1),
+  storeid(-1),
   clientactive(true),
   fxpdstactive(true),
   timestamp(0),
   tm(tm),
-  ticker(0)
+  ticker(0),
+  oversize(false)
 {
   global->getTickPoke()->startPoke(this, "TransferMonitor", TICK_INTERVAL, 0);
 }
@@ -314,6 +319,135 @@ void TransferMonitor::engageUpload(
   maxtransfertimeseconds = maxtime;
 }
 
+// the download side finished: the whole file is in the memory store, start the
+// upload side toward the target site
+void TransferMonitor::startMemoryUpload() {
+  uploadphase = true;
+  if (lt != nullptr) {
+    lt->deactivate();
+    lt = nullptr;
+  }
+  int dpol = sld->getSite()->getSSLTransferPolicy();
+  ssl = dpol == SITE_SSL_ALWAYS_ON || dpol == SITE_SSL_PREFER_ON;
+  TransferProtocol sprot = global->getLocalStorage()->getTransferProtocol();
+  TransferProtocol dprot = sld->getSite()->getTransferProtocol();
+  ipv6 = useIPv6(sprot, dprot);
+  clientactive = !sld->getSite()->hasBrokenPASV();
+  fld->touchFile(dfile, sld->getSite()->getUser(), true);
+  setStatus(TM_STATUS_AWAITING_PASSIVE);
+  startstamp = util::getEpochNowMillis();
+  if (clientactive) {
+    sld->preparePassiveTransfer(dst, dfile, false, ipv6, ssl);
+    lt = global->getLocalStorage()->preparePassiveMemoryUpload(this);
+  }
+  else {
+    FTPConn* conn = sld->getConn(dst);
+    if (!conn->getDataProxy()) {
+      Core::StringResult passiveresult = ipv6 ? global->getLocalStorage()->getAddress6(conn->getSockId()) : global->getLocalStorage()->getAddress4(conn->getSockId());
+      if (!passiveresult.success) {
+        lateInMemoryFailure(passiveresult.error);
+        return;
+      }
+    }
+    lt = global->getLocalStorage()->activeModeMemoryUpload(this, storeid, ipv6, ssl, conn);
+  }
+  int maxsld = sld->getSite()->getMaxTransferTimeSeconds();
+  int maxtime = tm->getMaxTransferTimeSeconds();
+  if (maxsld >= 0) {
+    maxtime = maxsld;
+  }
+  maxtransfertimeseconds = maxtime;
+}
+
+void TransferMonitor::engageInMemory(
+  int transferid,
+  const std::string& sfile, const std::shared_ptr<SiteLogic>& sls, const std::shared_ptr<FileList>& fls,
+  const std::shared_ptr<SiteLogic>& sld, const std::shared_ptr<FileList>& fld,
+  const std::shared_ptr<CommandOwner>& srcco, const std::shared_ptr<CommandOwner>& dstco)
+{
+  reset();
+  type = TM_TYPE_INMEMORY;
+  uploadphase = false;
+  this->transferid = transferid;
+  this->sls = sls;
+  this->sld = sld;
+  this->fls = fls;
+  this->spath = fls->getPath();
+  this->fld = fld;
+  this->dpath = fld->getPath();
+  this->sfile = sfile;
+  this->dfile = sfile;
+  this->srcco = srcco;
+  this->dstco = dstco;
+  setStatus(TM_STATUS_AWAITING_PASSIVE);
+  File* sf = fls->getFile(sfile);
+  if (transferpath::decide(sls->getSite()->inMemoryTransfer(), sld->getSite()->inMemoryTransfer(),
+      sf ? (long long) sf->getSize() : 0LL) == transferpath::Path::Oversize)
+  {
+    // fail at attempt time (first tick, after the job has adopted the transfer
+    // status) rather than skipping at pending-list time, so the oversize
+    // failure flows through the normal attempt counting; no connections are
+    // locked for this attempt
+    oversize = true;
+    // shortcut: status shown as FXP type, upgrade if status screens need to distinguish in-memory
+    ts = std::make_shared<TransferStatus>(transferid, TRANSFERSTATUS_TYPE_FXP,
+        sls->getSite()->getName(), sld->getSite()->getName(), srcco ? srcco->getName() : "", dfile, fls, spath,
+        fld, dpath, sf ? sf->getSize() : 0, 0, -1, -1, false, true);
+    tm->addNewTransferStatus(ts);
+    return;
+  }
+  if (!sls->lockDownloadConn(fls, &src, srcco, this)) {
+    tm->transferFailed(ts, TM_ERR_LOCK_DOWN);
+    setStatus(TM_STATUS_IDLE);
+    return;
+  }
+  if (!sld->lockUploadConn(fld, &dst, dstco, this)) {
+    tm->transferFailed(ts, TM_ERR_LOCK_UP);
+    sls->returnConn(src, true);
+    setStatus(TM_STATUS_IDLE);
+    return;
+  }
+  int spol = sls->getSite()->getSSLTransferPolicy();
+  if (spol == SITE_SSL_ALWAYS_ON || spol == SITE_SSL_PREFER_ON) {
+    ssl = true;
+  }
+  TransferProtocol sprot = sls->getSite()->getTransferProtocol();
+  TransferProtocol dprot = global->getLocalStorage()->getTransferProtocol();
+  ipv6 = useIPv6(sprot, dprot);
+  clientactive = !sls->getSite()->hasBrokenPASV();
+  ts = std::make_shared<TransferStatus>(transferid, TRANSFERSTATUS_TYPE_FXP,
+      sls->getSite()->getName(), sld->getSite()->getName(), srcco ? srcco->getName() : "", dfile, fls, spath,
+      fld, dpath, sf ? sf->getSize() : 0, 0, src, dst, ssl, clientactive);
+  tm->addNewTransferStatus(ts);
+  if (!transferProtocolCombinationPossible(sprot, dprot)) {
+    lateInMemoryFailure("Transfer not possible due to conflicting IPv4/IPv6 settings");
+    return;
+  }
+  if (clientactive) {
+    sls->preparePassiveTransfer(src, sfile, false, ipv6, ssl);
+    lt = global->getLocalStorage()->preparePassiveDownload(this);
+  }
+  else {
+    FTPConn* conn = sls->getConn(src);
+    if (!conn->getDataProxy()) {
+      Core::StringResult passiveresult = ipv6 ? global->getLocalStorage()->getAddress6(conn->getSockId()) : global->getLocalStorage()->getAddress4(conn->getSockId());
+      if (!passiveresult.success) {
+        lateInMemoryFailure(passiveresult.error);
+        return;
+      }
+    }
+    lt = global->getLocalStorage()->activeModeDownload(this, ipv6, ssl, conn);
+    storeid = static_cast<LocalDownload *>(lt)->getStoreId();
+    global->getLocalStorage()->reserveStoreContent(storeid, sf ? sf->getSize() : 0);
+  }
+  int maxsls = sls->getSite()->getMaxTransferTimeSeconds();
+  int maxtime = tm->getMaxTransferTimeSeconds();
+  if (maxsls >= 0) {
+    maxtime = maxsls;
+  }
+  maxtransfertimeseconds = maxtime;
+}
+
 void TransferMonitor::engageList(int transferid, const std::shared_ptr<SiteLogic>& sls, int connid,
   bool hiddenfiles, const std::shared_ptr<FileList>& fl, const std::shared_ptr<CommandOwner>& co, bool ipv6)
 {
@@ -353,6 +487,13 @@ void TransferMonitor::tick(int msg) {
   if (status == TM_STATUS_IDLE) {
     return;
   }
+  if (oversize) {
+    // runs on the first tick after engage: the transfer job has by then adopted
+    // the transfer status, so this failure counts through the normal attempt
+    // counter (three attempts, then the file is skipped)
+    lateInMemoryFailure("File exceeds the in-memory per-file size cap (4 GiB)", false);
+    return;
+  }
   timestamp += TICK_INTERVAL;
   ++ticker;
   if (type == TM_TYPE_FXP) {
@@ -363,7 +504,7 @@ void TransferMonitor::tick(int msg) {
       }
     }
   }
-  if (type == TM_TYPE_DOWNLOAD || type == TM_TYPE_UPLOAD) {
+  if (type == TM_TYPE_DOWNLOAD || type == TM_TYPE_UPLOAD || type == TM_TYPE_INMEMORY) {
     if (ticker % 4 == 0) { // run every 200 ms
       updateLocalTransferSizeSpeed();
     }
@@ -433,6 +574,27 @@ void TransferMonitor::passiveReady(const std::string & host, int port) {
         sls->prepareActiveList(src, this, ipv6, host, port, ssl);
       }
       break;
+    case TM_TYPE_INMEMORY:
+      if (!uploadphase) {
+        if (clientactive) {
+          global->getLocalStorage()->passiveModeDownload(this, lt, ipv6, host, port, ssl, sls->getConn(src));
+          storeid = static_cast<LocalDownload *>(lt)->getStoreId();
+          File* sf = fls ? fls->getFile(sfile) : nullptr;
+          global->getLocalStorage()->reserveStoreContent(storeid, sf ? sf->getSize() : 0);
+        }
+        else {
+          sls->prepareActiveTransfer(src, sfile, false, ipv6, host, port, ssl);
+        }
+      }
+      else {
+        if (clientactive) {
+          global->getLocalStorage()->passiveModeMemoryUpload(this, lt, storeid, ipv6, host, port, ssl, sld->getConn(dst));
+        }
+        else {
+          sld->prepareActiveTransfer(dst, dfile, false, ipv6, host, port, ssl);
+        }
+      }
+      break;
   }
 }
 
@@ -500,6 +662,14 @@ void TransferMonitor::startClientTransfer() {
     case TM_TYPE_DOWNLOAD:
       sls->download(src);
       break;
+    case TM_TYPE_INMEMORY:
+      if (uploadphase) {
+        sld->upload(dst);
+      }
+      else {
+        sls->download(src);
+      }
+      break;
     case TM_TYPE_LIST:
       if (hiddenfiles) {
         sls->listAll(src);
@@ -534,6 +704,21 @@ void TransferMonitor::sourceComplete() {
 }
 
 void TransferMonitor::targetComplete() {
+  if (type == TM_TYPE_INMEMORY && !uploadphase) {
+    // memory side completed: nothing reached the target site yet, so skip the dst
+    // bookkeeping below. Normal case: start the upload side.
+    if (fls) {
+      fls->finishDownload(sfile);
+    }
+    partialcompletestamp = timestamp;
+    if (status == TM_STATUS_TRANSFERRING) {
+      startMemoryUpload();
+    }
+    else {
+      transferFailed(ts, TM_ERR_OTHER);
+    }
+    return;
+  }
   assert(status == TM_STATUS_SOURCE_ERROR_AWAITING_TARGET ||
          status == TM_STATUS_TRANSFERRING ||
          status == TM_STATUS_TRANSFERRING_SOURCE_COMPLETE ||
@@ -605,6 +790,23 @@ void TransferMonitor::finish() {
     case TM_TYPE_LIST:
       sls->listCompleted(src, storeid, fls, srcco);
       break;
+    case TM_TYPE_INMEMORY: {
+      unsigned long long int size = lt ? lt->size() : ts->knownTargetSize();
+      unsigned long long int speed = size * 1000 / span;
+      ts->setTargetSize(size);
+      ts->setSpeed(speed);
+      ts->setTimeSpent(span);
+      sls->getSite()->addTransferStatsFile(STATS_DOWN, size);
+      global->getStatistics()->addTransferStatsFile(STATS_DOWN, size);
+      sld->getSite()->addTransferStatsFile(STATS_UP, size);
+      global->getStatistics()->addTransferStatsFile(STATS_UP, size);
+      break;
+    }
+  }
+  // free the per-file RAM buffer: download served its one upload
+  if (type == TM_TYPE_INMEMORY && storeid != -1) {
+    global->getLocalStorage()->purgeStoreContent(storeid);
+    storeid = -1;
   }
   if (!!ts) {
     ts->setFinished();
@@ -643,7 +845,7 @@ void TransferMonitor::sourceError(TransferError err) {
   }
   error = err;
   setStatus(TM_STATUS_SOURCE_ERROR_AWAITING_TARGET);
-  if (type == TM_TYPE_DOWNLOAD) {
+  if (type == TM_TYPE_DOWNLOAD || type == TM_TYPE_INMEMORY) {
     closeRemainingConnections();
   }
 }
@@ -681,7 +883,7 @@ void TransferMonitor::targetError(TransferError err) {
   }
   error = err;
   setStatus(TM_STATUS_TARGET_ERROR_AWAITING_SOURCE);
-  if (type == TM_TYPE_UPLOAD) {
+  if (type == TM_TYPE_UPLOAD || type == TM_TYPE_INMEMORY) {
     closeRemainingConnections();
   }
 }
@@ -795,6 +997,10 @@ Status TransferMonitor::getStatus() const {
   return status;
 }
 
+int TransferMonitor::getType() const {
+  return type;
+}
+
 void TransferMonitor::reset() {
   sls.reset();
   sld.reset();
@@ -811,7 +1017,12 @@ void TransferMonitor::reset() {
   startstamp = timestamp;
   partialcompletestamp = timestamp;
   rawbufqueue.clear();
+  if (storeid != -1) {
+    global->getLocalStorage()->purgeStoreContent(storeid);
+  }
   storeid = -1;
+  uploadphase = false;
+  oversize = false;
   maxtransfertimeseconds = -1;
   timeout = false;
   transferid = -1;
@@ -853,6 +1064,10 @@ void TransferMonitor::transferFailed(const std::shared_ptr<TransferStatus> & ts,
     lt->deactivate();
     lt = nullptr;
   }
+  if (type == TM_TYPE_INMEMORY && storeid != -1) {
+    global->getLocalStorage()->purgeStoreContent(storeid);
+    storeid = -1;
+  }
   tm->transferFailed(ts, err);
   setStatus(TM_STATUS_IDLE);
 }
@@ -879,6 +1094,25 @@ void TransferMonitor::localInfo(const std::string& info) {
 
 void TransferMonitor::localError(const std::string& info) {
   localInfo("Error: " + info);
+}
+
+void TransferMonitor::lateInMemoryFailure(const std::string& reason, bool lockedconns) {
+  localError(reason);
+  ts->setFailed();
+  if (lt != nullptr) {
+    lt->deactivate();
+    lt = nullptr;
+  }
+  if (storeid != -1) {
+    global->getLocalStorage()->purgeStoreContent(storeid);
+    storeid = -1;
+  }
+  tm->transferFailed(ts, TM_ERR_OTHER);
+  if (lockedconns) {
+    sls->returnConn(src, true);
+    sld->returnConn(dst, true);
+  }
+  setStatus(TM_STATUS_IDLE);
 }
 
 void TransferMonitor::lateFXPFailure(const std::string& reason) {
@@ -962,7 +1196,8 @@ void TransferMonitor::closeRemainingConnections() {
   }
   if (lt) {
     if (((type == TM_TYPE_DOWNLOAD || type == TM_TYPE_LIST) && status != TM_STATUS_TARGET_ERROR_AWAITING_SOURCE && status != TM_STATUS_TRANSFERRING_TARGET_COMPLETE) ||
-        (type == TM_TYPE_UPLOAD && status != TM_STATUS_SOURCE_ERROR_AWAITING_TARGET && status != TM_STATUS_TRANSFERRING_SOURCE_COMPLETE))
+        (type == TM_TYPE_UPLOAD && status != TM_STATUS_SOURCE_ERROR_AWAITING_TARGET && status != TM_STATUS_TRANSFERRING_SOURCE_COMPLETE) ||
+        type == TM_TYPE_INMEMORY)
     {
       lt->disconnect();
     }
