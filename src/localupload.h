@@ -22,7 +22,7 @@ private:
 protected:
   void FDFail(int sockid, const std::string& error) override;
   void init(TransferMonitor* tm, int localtransferid, FTPConn* ftpconn, const Path& path, const std::string& filename, bool ssl, bool passivemode, int port = 0);
-  // hooks for RAM-sourced uploads (LocalMemoryUpload); default source is a file on disk
+  // hooks for memory-sourced uploads (LocalMemoryUpload); default source is a file on disk
   virtual bool beginSource();
   virtual void sendChunk();
   unsigned long long int filepos;

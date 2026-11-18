@@ -319,9 +319,9 @@ void TransferMonitor::engageUpload(
   maxtransfertimeseconds = maxtime;
 }
 
-// the download side finished: the whole file is in the RAM store, start the
+// the download side finished: the whole file is in the memory store, start the
 // upload side toward the target site
-void TransferMonitor::startRamUpload() {
+void TransferMonitor::startMemoryUpload() {
   uploadphase = true;
   if (lt != nullptr) {
     lt->deactivate();
@@ -389,6 +389,7 @@ void TransferMonitor::engageInMemory(
     // failure flows through the normal attempt counting; no connections are
     // locked for this attempt
     oversize = true;
+    // shortcut: status shown as FXP type, upgrade if status screens need to distinguish in-memory
     ts = std::make_shared<TransferStatus>(transferid, TRANSFERSTATUS_TYPE_FXP,
         sls->getSite()->getName(), sld->getSite()->getName(), srcco ? srcco->getName() : "", dfile, fls, spath,
         fld, dpath, sf ? sf->getSize() : 0, 0, -1, -1, false, true);
@@ -704,14 +705,14 @@ void TransferMonitor::sourceComplete() {
 
 void TransferMonitor::targetComplete() {
   if (type == TM_TYPE_INMEMORY && !uploadphase) {
-    // RAM side completed: nothing reached the target site yet, so skip the dst
+    // memory side completed: nothing reached the target site yet, so skip the dst
     // bookkeeping below. Normal case: start the upload side.
     if (fls) {
       fls->finishDownload(sfile);
     }
     partialcompletestamp = timestamp;
     if (status == TM_STATUS_TRANSFERRING) {
-      startRamUpload();
+      startMemoryUpload();
     }
     else {
       transferFailed(ts, TM_ERR_OTHER);

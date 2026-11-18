@@ -43,6 +43,7 @@ public:
   Core::BinaryData getTempFileContent(const std::string &) const;
   Core::BinaryData getFileContent(const Path &) const;
   const Core::BinaryData & getStoreContent(int) const;
+  bool hasStoreContent(int storeid) const;
   unsigned char* reserveStoreContent(int storeid, unsigned long long int size);
   void setStoreContentSize(int storeid, unsigned long long int size);
   void purgeStoreContent(int);

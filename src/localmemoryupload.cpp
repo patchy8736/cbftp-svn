@@ -34,7 +34,8 @@ bool LocalMemoryUpload::engageStore(TransferMonitor* tm, int localtransferid, in
 
 bool LocalMemoryUpload::beginSource() {
   fileopened = false;
-  if (ls->getStoreContent(storeid).empty()) {
+  // presence check, not emptiness: an empty store is a legitimate 0-byte file
+  if (!ls->hasStoreContent(storeid)) {
     FDFail(sockid, "No in-memory data available to upload");
     return false;
   }

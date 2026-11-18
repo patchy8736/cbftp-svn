@@ -95,7 +95,7 @@ class TransferMonitor : public Core::EventReceiver, public RawBufferCallback {
     bool checkForDeadFXPTransfers();
     bool checkMaxTransferTime();
     void startClientTransfer();
-    void startRamUpload();
+    void startMemoryUpload();
     void lateFXPFailure(const std::string& reason);
     void lateInMemoryFailure(const std::string& reason, bool lockedconns = true);
     void lateDownloadFailure(const std::string& reason, bool dupe = false);

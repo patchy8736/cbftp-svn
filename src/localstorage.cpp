@@ -204,6 +204,10 @@ const Core::BinaryData & LocalStorage::getStoreContent(int storeid) const {
   return emptydata;
 }
 
+bool LocalStorage::hasStoreContent(int storeid) const {
+  return content.find(storeid) != content.end();
+}
+
 void LocalStorage::purgeStoreContent(int storeid) {
   if (content.find(storeid) != content.end()) {
     content.erase(storeid);
