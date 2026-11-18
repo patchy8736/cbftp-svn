@@ -656,7 +656,12 @@ void SiteLogic::commandSuccess(int id, FTPConnState state) {
       return;
     case FTPConnState::RETR_COMPLETE:
       assert(connstatetracker[id].transferInitialized());
-      connstatetracker[id].getTransferMonitor()->sourceComplete();
+      // in-memory transfers: the download half completes only through the
+      // memory-side targetComplete() (LocalDownload finalize); the source
+      // site's RETR_COMPLETE must not advance the FXP-derived state machine
+      if (connstatetracker[id].getTransferMonitor()->getType() != TM_TYPE_INMEMORY) {
+        connstatetracker[id].getTransferMonitor()->sourceComplete();
+      }
       transferComplete(id, true);
       connstatetracker[id].finishTransfer();
       handlePostDownload(id);
