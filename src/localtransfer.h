@@ -30,7 +30,7 @@ public:
   virtual unsigned long long int size() const = 0;
   FTPConn * getConn() const;
   virtual void reserve(TransferMonitor* tm) = 0;
-  virtual void deactivate();
+  void deactivate();
 protected:
   void activate(int localtransferid);
   bool ssl;

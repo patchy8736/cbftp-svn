@@ -264,6 +264,9 @@ bool TransferJob::inMemory() const {
 
 void TransferJob::setInMemory(bool inmemory) {
   this->inmemory = inmemory;
+  if (inmemory) {
+    slots = 1; // ctor computed slots before the flag was set
+  }
 }
 
 int TransferJob::getType() const {
@@ -503,6 +506,9 @@ int TransferJob::maxPossibleSlots() const {
     case TRANSFERJOB_UPLOAD:
       return std::min(global->getLocalStorage()->getMaxUploadSlots(), dst->getSite()->getMaxUp());
     case TRANSFERJOB_FXP:
+      if (inmemory) {
+        return 1; // in-memory transfers are sequential: one file at a time
+      }
       return std::min(src->getSite()->getMaxDownTransferJob(), dst->getSite()->getMaxUp());
     case TRANSFERJOB_DOWNLOAD:
       return std::min(global->getLocalStorage()->getMaxDownloadSlots(), src->getSite()->getMaxDownTransferJob());

@@ -16,7 +16,6 @@ public:
   unsigned long long int size() const override;
   int getStoreId() const;
   void reserve(TransferMonitor* tm) override;
-  void deactivate() override;
 private:
   void FDInterConnected(int sockid) override;
   void FDInterDisconnected(int sockid, Core::DisconnectType reason, const std::string& details) override;

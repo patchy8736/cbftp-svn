@@ -43,6 +43,8 @@ public:
   Core::BinaryData getTempFileContent(const std::string &) const;
   Core::BinaryData getFileContent(const Path &) const;
   const Core::BinaryData & getStoreContent(int) const;
+  unsigned char* reserveStoreContent(int storeid, unsigned long long int size);
+  void setStoreContentSize(int storeid, unsigned long long int size);
   void purgeStoreContent(int);
   int requestDelete(const Path & filename, bool care = false);
   bool deleteFile(const Path & filename);
@@ -61,7 +63,6 @@ public:
   static LocalFile getLocalFile(const Path & path);
   const Path & getTempPath() const;
   void setTempPath(const std::string &);
-  void storeContent(int, Core::BinaryData &&);
   const Path & getDownloadPath() const;
   void setDownloadPath(const Path &);
   static std::shared_ptr<LocalFileList> getLocalFileList(const Path& path);

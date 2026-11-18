@@ -22,6 +22,7 @@
 #include "filesystem.h"
 #include "statistics.h"
 #include "transferprotocol.h"
+#include "transferpath.h"
 #include "timereference.h"
 
 // max time to wait for the other site to fail after a failure has happened
@@ -38,11 +39,15 @@
 TransferMonitor::TransferMonitor(TransferManager * tm) :
   transferid(0),
   status(TM_STATUS_IDLE),
+  src(-1),
+  dst(-1),
+  storeid(-1),
   clientactive(true),
   fxpdstactive(true),
   timestamp(0),
   tm(tm),
-  ticker(0)
+  ticker(0),
+  oversize(false)
 {
   global->getTickPoke()->startPoke(this, "TransferMonitor", TICK_INTERVAL, 0);
 }
@@ -375,6 +380,21 @@ void TransferMonitor::engageInMemory(
   this->srcco = srcco;
   this->dstco = dstco;
   setStatus(TM_STATUS_AWAITING_PASSIVE);
+  File* sf = fls->getFile(sfile);
+  if (transferpath::decide(sls->getSite()->inMemoryTransfer(), sld->getSite()->inMemoryTransfer(),
+      sf ? (long long) sf->getSize() : 0LL) == transferpath::Path::Oversize)
+  {
+    // fail at attempt time (first tick, after the job has adopted the transfer
+    // status) rather than skipping at pending-list time, so the oversize
+    // failure flows through the normal attempt counting; no connections are
+    // locked for this attempt
+    oversize = true;
+    ts = std::make_shared<TransferStatus>(transferid, TRANSFERSTATUS_TYPE_FXP,
+        sls->getSite()->getName(), sld->getSite()->getName(), srcco ? srcco->getName() : "", dfile, fls, spath,
+        fld, dpath, sf ? sf->getSize() : 0, 0, -1, -1, false, true);
+    tm->addNewTransferStatus(ts);
+    return;
+  }
   if (!sls->lockDownloadConn(fls, &src, srcco, this)) {
     tm->transferFailed(ts, TM_ERR_LOCK_DOWN);
     setStatus(TM_STATUS_IDLE);
@@ -396,7 +416,7 @@ void TransferMonitor::engageInMemory(
   clientactive = !sls->getSite()->hasBrokenPASV();
   ts = std::make_shared<TransferStatus>(transferid, TRANSFERSTATUS_TYPE_FXP,
       sls->getSite()->getName(), sld->getSite()->getName(), srcco ? srcco->getName() : "", dfile, fls, spath,
-      fld, dpath, fls->getFile(sfile)->getSize(), 0, src, dst, ssl, clientactive);
+      fld, dpath, sf ? sf->getSize() : 0, 0, src, dst, ssl, clientactive);
   tm->addNewTransferStatus(ts);
   if (!transferProtocolCombinationPossible(sprot, dprot)) {
     lateInMemoryFailure("Transfer not possible due to conflicting IPv4/IPv6 settings");
@@ -417,6 +437,7 @@ void TransferMonitor::engageInMemory(
     }
     lt = global->getLocalStorage()->activeModeDownload(this, ipv6, ssl, conn);
     storeid = static_cast<LocalDownload *>(lt)->getStoreId();
+    global->getLocalStorage()->reserveStoreContent(storeid, sf ? sf->getSize() : 0);
   }
   int maxsls = sls->getSite()->getMaxTransferTimeSeconds();
   int maxtime = tm->getMaxTransferTimeSeconds();
@@ -463,6 +484,13 @@ void TransferMonitor::engageList(int transferid, const std::shared_ptr<SiteLogic
 
 void TransferMonitor::tick(int msg) {
   if (status == TM_STATUS_IDLE) {
+    return;
+  }
+  if (oversize) {
+    // runs on the first tick after engage: the transfer job has by then adopted
+    // the transfer status, so this failure counts through the normal attempt
+    // counter (three attempts, then the file is skipped)
+    lateInMemoryFailure("File exceeds the in-memory per-file size cap (4 GiB)", false);
     return;
   }
   timestamp += TICK_INTERVAL;
@@ -550,6 +578,8 @@ void TransferMonitor::passiveReady(const std::string & host, int port) {
         if (clientactive) {
           global->getLocalStorage()->passiveModeDownload(this, lt, ipv6, host, port, ssl, sls->getConn(src));
           storeid = static_cast<LocalDownload *>(lt)->getStoreId();
+          File* sf = fls ? fls->getFile(sfile) : nullptr;
+          global->getLocalStorage()->reserveStoreContent(storeid, sf ? sf->getSize() : 0);
         }
         else {
           sls->prepareActiveTransfer(src, sfile, false, ipv6, host, port, ssl);
@@ -966,6 +996,10 @@ Status TransferMonitor::getStatus() const {
   return status;
 }
 
+int TransferMonitor::getType() const {
+  return type;
+}
+
 void TransferMonitor::reset() {
   sls.reset();
   sld.reset();
@@ -987,6 +1021,7 @@ void TransferMonitor::reset() {
   }
   storeid = -1;
   uploadphase = false;
+  oversize = false;
   maxtransfertimeseconds = -1;
   timeout = false;
   transferid = -1;
@@ -1060,7 +1095,7 @@ void TransferMonitor::localError(const std::string& info) {
   localInfo("Error: " + info);
 }
 
-void TransferMonitor::lateInMemoryFailure(const std::string& reason) {
+void TransferMonitor::lateInMemoryFailure(const std::string& reason, bool lockedconns) {
   localError(reason);
   ts->setFailed();
   if (lt != nullptr) {
@@ -1072,8 +1107,10 @@ void TransferMonitor::lateInMemoryFailure(const std::string& reason) {
     storeid = -1;
   }
   tm->transferFailed(ts, TM_ERR_OTHER);
-  sls->returnConn(src, true);
-  sld->returnConn(dst, true);
+  if (lockedconns) {
+    sls->returnConn(src, true);
+    sld->returnConn(dst, true);
+  }
   setStatus(TM_STATUS_IDLE);
 }
 

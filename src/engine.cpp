@@ -1026,6 +1026,11 @@ bool Engine::transferJobActionRequest(const std::shared_ptr<SiteTransferJob> & s
       }
       case PENDINGTRANSFER_INMEMORY:
       {
+        // in-memory transfers run strictly one file at a time across all jobs,
+        // so peak RAM stays at the largest single file
+        if (global->getTransferManager()->inMemoryTransferInProgress()) {
+          return false;
+        }
         if (!pt.getSrc()->downloadSlotAvailable(TransferOriginType::TRANSFERJOB)) {
           return false;
         }
@@ -1560,16 +1565,7 @@ void Engine::refreshPendingTransferList(const std::shared_ptr<TransferJob>& tj) 
                   }
                 }
               }
-              bool inmemory = false;
-              if (tj->inMemory()) {
-                if (transferpath::decide(tj->getSrc()->getSite()->inMemoryTransfer(), tj->getDst()->getSite()->inMemoryTransfer(),
-                    (long long) f->getSize()) == transferpath::Path::Oversize)
-                {
-                  tj->addSkippedTransfer(subpath / filename, f->getSize());
-                  continue;
-                }
-                inmemory = true;
-              }
+              bool inmemory = tj->inMemory();
               PendingTransfer p(tj->getSrc(), srclist, filename, tj->getDst(), dstlist, filename, inmemory);
               addPendingTransfer(list, p);
               tj->addPendingTransfer(subpath / filename, f->getSize());

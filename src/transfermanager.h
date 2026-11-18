@@ -63,4 +63,5 @@ class TransferManager {
     int getMaxTransferTimeSeconds() const;
     void setMaxTransferTimeSeconds(int seconds);
     void abortTransfer(int transferid);
+    bool inMemoryTransferInProgress() const;
 };

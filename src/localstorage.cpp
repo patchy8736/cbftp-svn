@@ -428,8 +428,22 @@ void LocalStorage::setDownloadPath(const Path & path) {
   downloadpath = path;
 }
 
-void LocalStorage::storeContent(int storeid, Core::BinaryData && data) {
-  content[storeid] = std::move(data);
+unsigned char* LocalStorage::reserveStoreContent(int storeid, unsigned long long int size) {
+  Core::BinaryData& data = content[storeid];
+  if (data.size() < size) {
+    // geometric growth for unreserved uploads; in-memory transfers pre-reserve
+    // the exact file size at engage time so no reallocation happens mid-download
+    data.reserve(size > data.capacity() * 2 ? size : data.capacity() * 2);
+    data.resize(size);
+  }
+  return data.data();
+}
+
+void LocalStorage::setStoreContentSize(int storeid, unsigned long long int size) {
+  Core::BinaryData& data = content[storeid];
+  if (data.size() != size) {
+    data.resize(size);
+  }
 }
 
 std::shared_ptr<LocalFileList> LocalStorage::getLocalFileList(const Path & path) {

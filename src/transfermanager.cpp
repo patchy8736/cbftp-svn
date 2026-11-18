@@ -189,3 +189,12 @@ void TransferManager::abortTransfer(int transferid) {
     }
   }
 }
+
+bool TransferManager::inMemoryTransferInProgress() const {
+  for (std::list<std::shared_ptr<TransferMonitor> >::const_iterator it = transfermonitors.begin(); it != transfermonitors.end(); it++) {
+    if (!(*it)->idle() && (*it)->getType() == TM_TYPE_INMEMORY) {
+      return true;
+    }
+  }
+  return false;
+}

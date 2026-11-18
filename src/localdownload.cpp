@@ -2,7 +2,6 @@
 
 #include <cstring>
 #include <cstdlib>
-#include <utility>
 #include <unistd.h>
 
 #include "address.h"
@@ -10,7 +9,6 @@
 #include "core/types.h"
 #include "core/util.h"
 #include "globalcontext.h"
-#include "eventlog.h"
 #include "transfermonitor.h"
 #include "ftpconn.h"
 #include "localstorage.h"
@@ -116,8 +114,9 @@ void LocalDownload::FDInterDisconnected(int sockid, Core::DisconnectType reason,
     }
   }
   if (inmemory) {
-    Core::BinaryData out(buf, buf + bufpos);
-    ls->storeContent(storeid, std::move(out));
+    // store content was pre-reserved to the file size; trim to the actual
+    // downloaded length so the upload pump sends exactly the received bytes
+    ls->setStoreContentSize(storeid, bufpos);
   }
   if (reason != Core::DisconnectType::ERROR) {
     tm->localInfo(details);
@@ -168,38 +167,34 @@ unsigned long long int LocalDownload::size() const {
 }
 
 void LocalDownload::append(char* data, unsigned int datalen) {
+  if (inmemory) {
+    // download straight into the store buffer, pre-reserved to the file size at
+    // engage time: peak RAM is one copy of the largest single file
+    unsigned char* dst = ls->reserveStoreContent(storeid, bufpos + datalen);
+    memcpy(dst + bufpos, data, datalen);
+    bufpos += datalen;
+    return;
+  }
   if (!buflen) {
     buf = (char*) malloc(CHUNK);
     buflen = CHUNK;
   }
   if (bufpos + datalen > buflen) {
-    if (inmemory) {
-      while (bufpos + datalen > buflen) {
-        buflen *= 2;
-      }
-      char* newbuf = static_cast<char*>(malloc(buflen));
-      global->getEventLog()->log("test", "Increasing to " + std::to_string(buflen));
-      memcpy(newbuf, buf, bufpos);
-      free(buf);
-      buf = newbuf;
-    }
-    else {
-      if (!fileopened) {
-        if (!openFile(false)) {
-          return;
-        }
-      }
-      filestream.write(buf, bufpos);
-      if (filestream.fail()) {
-        std::string error = Core::util::getStrError(errno);
-        filestream.close();
-        global->getIOManager()->closeSocket(sockid);
-        FDFail(sockid, "Failed writing file " + (path / filename).toString() + ": " + error);
+    if (!fileopened) {
+      if (!openFile(false)) {
         return;
       }
-      filesize = filestream.tellg();
-      bufpos = 0;
     }
+    filestream.write(buf, bufpos);
+    if (filestream.fail()) {
+      std::string error = Core::util::getStrError(errno);
+      filestream.close();
+      global->getIOManager()->closeSocket(sockid);
+      FDFail(sockid, "Failed writing file " + (path / filename).toString() + ": " + error);
+      return;
+    }
+    filesize = filestream.tellg();
+    bufpos = 0;
   }
   memcpy(buf + bufpos, data, datalen);
   bufpos += datalen;
@@ -207,16 +202,6 @@ void LocalDownload::append(char* data, unsigned int datalen) {
 
 int LocalDownload::getStoreId() const {
   return storeid;
-}
-
-void LocalDownload::deactivate() {
-  LocalTransfer::deactivate();
-  // release the RAM work buffer; data has already been copied to the store
-  if (inmemory && buf != nullptr) {
-    free(buf);
-    buf = nullptr;
-    buflen = 0;
-  }
 }
 
 void LocalDownload::disconnect() {

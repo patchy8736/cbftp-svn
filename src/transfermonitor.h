@@ -85,6 +85,7 @@ class TransferMonitor : public Core::EventReceiver, public RawBufferCallback {
     int maxtransfertimeseconds;
     bool timeout;
     bool uploadphase;
+    bool oversize;
     void finish();
     void setTargetSizeSpeed(unsigned long long int, int);
     void reset();
@@ -96,7 +97,7 @@ class TransferMonitor : public Core::EventReceiver, public RawBufferCallback {
     void startClientTransfer();
     void startRamUpload();
     void lateFXPFailure(const std::string& reason);
-    void lateInMemoryFailure(const std::string& reason);
+    void lateInMemoryFailure(const std::string& reason, bool lockedconns = true);
     void lateDownloadFailure(const std::string& reason, bool dupe = false);
     void lateUploadFailure(const std::string& reason, bool dupe = false);
     void setStatus(Status status);
@@ -130,6 +131,7 @@ class TransferMonitor : public Core::EventReceiver, public RawBufferCallback {
     void engageList(int transferid, const std::shared_ptr<SiteLogic>& sls, int connid, bool hiddenfiles, const std::shared_ptr<FileList>& fl,
         const std::shared_ptr<CommandOwner>& co, bool ipv6);
     Status getStatus() const;
+    int getType() const;
     bool willFail() const;
     void newRawBufferLine(const std::pair<std::string, std::string> &);
     void localInfo(const std::string& info);
