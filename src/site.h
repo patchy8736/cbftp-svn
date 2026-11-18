@@ -88,6 +88,7 @@ private:
   bool sscnsupported;
   bool cpsvsupported;
   bool ceprsupported;
+  bool inmemorytransfer;
   bool brokenpasv;
   bool disabled;
   SiteAllowTransfer allowupload;
@@ -174,9 +175,11 @@ public:
   bool supportsSSCN() const;
   bool supportsCPSV() const;
   bool supportsCEPR() const;
+  bool inMemoryTransfer() const;
   void setSupportsSSCN(bool supported);
   void setSupportsCPSV(bool supported);
   void setSupportsCEPR(bool supported);
+  void setInMemoryTransfer(bool inmemory);
   bool getDisabled() const;
   SiteAllowTransfer getAllowUpload() const;
   SiteAllowTransfer getAllowDownload() const;

@@ -443,6 +443,9 @@ void SettingsLoaderSaver::loadSettings() {
     else if (!setting.compare("cepr")) {
       if (!value.compare("false")) site->setSupportsCEPR(false);
     }
+    else if (!setting.compare("inmemorytransfer")) {
+      if (!value.compare("true")) site->setInMemoryTransfer(true);
+    }
     else if (!setting.compare("listcommand")) {
       site->setListCommand(std::stoi(value));
     }
@@ -1047,6 +1050,7 @@ void SettingsLoaderSaver::saveSettings() {
       if (!site->supportsSSCN()) dfh->addOutputLine(filetag, name + "$sscn=false");
       if (!site->supportsCPSV()) dfh->addOutputLine(filetag, name + "$cpsv=false");
       if (!site->supportsCEPR()) dfh->addOutputLine(filetag, name + "$cepr=false");
+      if (site->inMemoryTransfer()) dfh->addOutputLine(filetag, name + "$inmemorytransfer=true");
       dfh->addOutputLine(filetag, name + "$listcommand=" + std::to_string(site->getListCommand()));
       if (site->needsPRET()) dfh->addOutputLine(filetag, name + "$pret=true");
       if (site->forceBinaryMode()) dfh->addOutputLine(filetag, name + "$binary=true");
