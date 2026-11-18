@@ -12,7 +12,8 @@ enum TransferMonitorType {
  TM_TYPE_FXP,
  TM_TYPE_DOWNLOAD,
  TM_TYPE_UPLOAD,
- TM_TYPE_LIST
+ TM_TYPE_LIST,
+ TM_TYPE_INMEMORY
 };
 
 enum Status {
@@ -83,6 +84,7 @@ class TransferMonitor : public Core::EventReceiver, public RawBufferCallback {
     std::shared_ptr<CommandOwner> dstco;
     int maxtransfertimeseconds;
     bool timeout;
+    bool uploadphase;
     void finish();
     void setTargetSizeSpeed(unsigned long long int, int);
     void reset();
@@ -92,7 +94,9 @@ class TransferMonitor : public Core::EventReceiver, public RawBufferCallback {
     bool checkForDeadFXPTransfers();
     bool checkMaxTransferTime();
     void startClientTransfer();
+    void startRamUpload();
     void lateFXPFailure(const std::string& reason);
+    void lateInMemoryFailure(const std::string& reason);
     void lateDownloadFailure(const std::string& reason, bool dupe = false);
     void lateUploadFailure(const std::string& reason, bool dupe = false);
     void setStatus(Status status);
@@ -120,6 +124,9 @@ class TransferMonitor : public Core::EventReceiver, public RawBufferCallback {
         const std::shared_ptr<CommandOwner>& co = nullptr, int connid = -1);
     void engageUpload(int transferid, const std::string& sfile, const std::shared_ptr<LocalFileList>& localfl,
       const std::shared_ptr<SiteLogic>& sld, const std::shared_ptr<FileList>& fld, const std::shared_ptr<CommandOwner>& co);
+    void engageInMemory(int transferid, const std::string& sfile, const std::shared_ptr<SiteLogic>& sls, const std::shared_ptr<FileList>& fls,
+      const std::shared_ptr<SiteLogic>& sld, const std::shared_ptr<FileList>& fld,
+      const std::shared_ptr<CommandOwner>& srcco, const std::shared_ptr<CommandOwner>& dstco);
     void engageList(int transferid, const std::shared_ptr<SiteLogic>& sls, int connid, bool hiddenfiles, const std::shared_ptr<FileList>& fl,
         const std::shared_ptr<CommandOwner>& co, bool ipv6);
     Status getStatus() const;

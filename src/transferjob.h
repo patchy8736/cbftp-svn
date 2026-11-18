@@ -106,6 +106,8 @@ public:
   std::string timeStartedFull() const;
   unsigned long long int getStartedEpoch() const;
   std::string typeString() const;
+  bool inMemory() const;
+  void setInMemory(bool inmemory);
   int filesProgress() const;
   int filesTotal() const;
   unsigned int getId() const;
@@ -137,6 +139,7 @@ private:
   void transferFailed(const std::shared_ptr<TransferStatus> &, int) override;
   void tick(int message) override;
   int type;
+  bool inmemory;
   std::shared_ptr<SiteLogic> src;
   std::shared_ptr<SiteLogic> dst;
   Path srcpath;

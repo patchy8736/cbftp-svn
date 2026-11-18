@@ -226,6 +226,7 @@ std::list<std::shared_ptr<TransferStatus>>::const_iterator TransferJob::transfer
 void TransferJob::init(unsigned int id, TransferJobType type, const std::shared_ptr<SiteLogic>& srcsl, const std::shared_ptr<SiteLogic>& dstsl, const Path& srcpath, const Path& dstpath, const std::string& srcsection, const std::string& dstsection, const std::string& srcfile, const std::string& dstfile) {
   this->id = id;
   this->type = type;
+  this->inmemory = false;
   this->src = srcsl;
   this->dst = dstsl;
   this->srcpath = srcpath;
@@ -255,6 +256,14 @@ std::string TransferJob::getDstFileName() const {
 
 CallbackType TransferJob::callbackType() const {
   return CallbackType::TRANSFERJOB;
+}
+
+bool TransferJob::inMemory() const {
+  return inmemory;
+}
+
+void TransferJob::setInMemory(bool inmemory) {
+  this->inmemory = inmemory;
 }
 
 int TransferJob::getType() const {

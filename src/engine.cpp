@@ -35,6 +35,7 @@
 #include "preparedrace.h"
 #include "sectionmanager.h"
 #include "transferprotocol.h"
+#include "transferpath.h"
 
 #define POKEINTERVAL 1000
 #define DIROBSERVETIME 20000
@@ -637,6 +638,9 @@ JobStartResult Engine::newTransferJobFXP(const std::string& srcsite, const std::
   }
   unsigned int id = nextid++;
   std::shared_ptr<TransferJob> tj = std::make_shared<TransferJob>(id, slsrc, srcfilelist, srcfile, sldst, dstfilelist, dstfile);
+  if (transferpath::decide(slsrc->getSite()->inMemoryTransfer(), sldst->getSite()->inMemoryTransfer(), 0) == transferpath::Path::InMemory) {
+    tj->setInMemory(true);
+  }
   tj->createSiteTransferJobs(tj);
   alltransferjobs.push_back(tj);
   currenttransferjobs.push_back(tj);
@@ -1013,6 +1017,26 @@ bool Engine::transferJobActionRequest(const std::shared_ptr<SiteTransferJob> & s
           return false;
         }
         std::shared_ptr<TransferStatus> ts = global->getTransferManager()->attemptTransfer(pt.getSrcFileName(),
+            pt.getSrc(), pt.getSrcFileList(), pt.getDst(), pt.getDstFileList(), tj->getSrcTransferJob(), tj->getDstTransferJob());
+        if (!!ts) {
+          tj->addTransfer(ts);
+          started = true;
+        }
+        break;
+      }
+      case PENDINGTRANSFER_INMEMORY:
+      {
+        if (!pt.getSrc()->downloadSlotAvailable(TransferOriginType::TRANSFERJOB)) {
+          return false;
+        }
+        if (!pt.getDst()->uploadSlotAvailable()) {
+          return false;
+        }
+        if (pt.getDst() == pt.getSrc() && pt.getDst()->slotsAvailable() < 2) {
+          pt.getDst()->haveConnectedActivate(2);
+          return false;
+        }
+        std::shared_ptr<TransferStatus> ts = global->getTransferManager()->attemptInMemoryTransfer(pt.getSrcFileName(),
             pt.getSrc(), pt.getSrcFileList(), pt.getDst(), pt.getDstFileList(), tj->getSrcTransferJob(), tj->getDstTransferJob());
         if (!!ts) {
           tj->addTransfer(ts);
@@ -1536,7 +1560,17 @@ void Engine::refreshPendingTransferList(const std::shared_ptr<TransferJob>& tj) 
                   }
                 }
               }
-              PendingTransfer p(tj->getSrc(), srclist, filename, tj->getDst(), dstlist, filename);
+              bool inmemory = false;
+              if (tj->inMemory()) {
+                if (transferpath::decide(tj->getSrc()->getSite()->inMemoryTransfer(), tj->getDst()->getSite()->inMemoryTransfer(),
+                    (long long) f->getSize()) == transferpath::Path::Oversize)
+                {
+                  tj->addSkippedTransfer(subpath / filename, f->getSize());
+                  continue;
+                }
+                inmemory = true;
+              }
+              PendingTransfer p(tj->getSrc(), srclist, filename, tj->getDst(), dstlist, filename, inmemory);
               addPendingTransfer(list, p);
               tj->addPendingTransfer(subpath / filename, f->getSize());
             }

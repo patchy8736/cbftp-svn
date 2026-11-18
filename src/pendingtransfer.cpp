@@ -3,14 +3,14 @@
 #include "filelist.h"
 #include "localfilelist.h"
 
-PendingTransfer::PendingTransfer(const std::shared_ptr<SiteLogic> & slsrc, const std::shared_ptr<FileList>& flsrc, std::string srcfilename, const std::shared_ptr<SiteLogic> & sldst, const std::shared_ptr<FileList>& fldst, std::string dstfilename) :
+PendingTransfer::PendingTransfer(const std::shared_ptr<SiteLogic> & slsrc, const std::shared_ptr<FileList>& flsrc, std::string srcfilename, const std::shared_ptr<SiteLogic> & sldst, const std::shared_ptr<FileList>& fldst, std::string dstfilename, bool inmemory) :
   slsrc(slsrc),
   sldst(sldst),
   flsrc(flsrc),
   fldst(fldst),
   srcfilename(srcfilename),
   dstfilename(dstfilename),
-  transfertype(PENDINGTRANSFER_FXP) {
+  transfertype(inmemory ? PENDINGTRANSFER_INMEMORY : PENDINGTRANSFER_FXP) {
 }
 
 PendingTransfer::PendingTransfer(const std::shared_ptr<SiteLogic> & sl, const std::shared_ptr<FileList>& fl, std::string srcfilename, std::shared_ptr<LocalFileList> fllocal, std::string dstfilename) :

@@ -2,6 +2,7 @@
 
 #include <cstring>
 #include <cstdlib>
+#include <utility>
 #include <unistd.h>
 
 #include "address.h"
@@ -116,7 +117,7 @@ void LocalDownload::FDInterDisconnected(int sockid, Core::DisconnectType reason,
   }
   if (inmemory) {
     Core::BinaryData out(buf, buf + bufpos);
-    ls->storeContent(storeid, out);
+    ls->storeContent(storeid, std::move(out));
   }
   if (reason != Core::DisconnectType::ERROR) {
     tm->localInfo(details);
@@ -206,6 +207,16 @@ void LocalDownload::append(char* data, unsigned int datalen) {
 
 int LocalDownload::getStoreId() const {
   return storeid;
+}
+
+void LocalDownload::deactivate() {
+  LocalTransfer::deactivate();
+  // release the RAM work buffer; data has already been copied to the store
+  if (inmemory && buf != nullptr) {
+    free(buf);
+    buf = nullptr;
+    buflen = 0;
+  }
 }
 
 void LocalDownload::disconnect() {

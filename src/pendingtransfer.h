@@ -6,6 +6,7 @@
 #define PENDINGTRANSFER_DOWNLOAD 5432
 #define PENDINGTRANSFER_UPLOAD 5433
 #define PENDINGTRANSFER_FXP 5434
+#define PENDINGTRANSFER_INMEMORY 5435
 
 class SiteLogic;
 class FileList;
@@ -13,7 +14,7 @@ class LocalFileList;
 
 class PendingTransfer {
 public:
-  PendingTransfer(const std::shared_ptr<SiteLogic> &, const std::shared_ptr<FileList>& fls, std::string, const std::shared_ptr<SiteLogic> &, const std::shared_ptr<FileList>& fld, std::string);
+  PendingTransfer(const std::shared_ptr<SiteLogic> &, const std::shared_ptr<FileList>& fls, std::string, const std::shared_ptr<SiteLogic> &, const std::shared_ptr<FileList>& fld, std::string, bool inmemory = false);
   PendingTransfer(const std::shared_ptr<SiteLogic> &, const std::shared_ptr<FileList>& fls, std::string, std::shared_ptr<LocalFileList>, std::string);
   PendingTransfer(std::shared_ptr<LocalFileList>, std::string, const std::shared_ptr<SiteLogic> &, const std::shared_ptr<FileList>& fld, std::string);
   ~PendingTransfer();

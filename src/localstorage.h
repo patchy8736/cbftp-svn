@@ -17,6 +17,7 @@
 class LocalTransfer;
 class LocalDownload;
 class LocalUpload;
+class LocalMemoryUpload;
 class TransferMonitor;
 class FTPConn;
 class LocalFileList;
@@ -29,12 +30,15 @@ public:
   ~LocalStorage();
   LocalTransfer* preparePassiveDownload(TransferMonitor* tm);
   LocalTransfer* preparePassiveUpload(TransferMonitor* tm);
+  LocalTransfer* preparePassiveMemoryUpload(TransferMonitor* tm);
   void passiveModeDownload(TransferMonitor* tm, LocalTransfer* lt, const std::string& file, bool ipv6, const std::string& host, int port, bool ssl, FTPConn* ftpconn);
   void passiveModeDownload(TransferMonitor* tm, LocalTransfer* lt, const Path& path, const std::string & file, bool ipv6, const std::string & host, int port, bool ssl, FTPConn* ftpconn);
   void passiveModeDownload(TransferMonitor* tm, LocalTransfer* lt, bool ipv6, const std::string& host, int port, bool ssl, FTPConn* ftpconn);
   void passiveModeUpload(TransferMonitor* tm, LocalTransfer* lt, const Path& path, const std::string& file, bool ipv6, const std::string& host, int port, bool ssl, FTPConn* ftpconn);
+  void passiveModeMemoryUpload(TransferMonitor* tm, LocalTransfer* lt, int storeid, bool ipv6, const std::string& host, int port, bool ssl, FTPConn* ftpconn);
   LocalTransfer* activeModeDownload(TransferMonitor* tm, const Path& path, const std::string& file, bool ipv6, bool ssl, FTPConn* ftpconn);
   LocalTransfer* activeModeDownload(TransferMonitor* tm, bool ipv6, bool ssl, FTPConn* ftpconn);
+  LocalTransfer* activeModeMemoryUpload(TransferMonitor* tm, int storeid, bool ipv6, bool ssl, FTPConn* ftpconn);
   LocalTransfer* activeModeUpload(TransferMonitor* tm, const Path& path, const std::string& file, bool ipv6, bool ssl, FTPConn* ftpconn);
   Core::BinaryData getTempFileContent(const std::string &) const;
   Core::BinaryData getFileContent(const Path &) const;
@@ -57,7 +61,7 @@ public:
   static LocalFile getLocalFile(const Path & path);
   const Path & getTempPath() const;
   void setTempPath(const std::string &);
-  void storeContent(int, const Core::BinaryData &);
+  void storeContent(int, Core::BinaryData &&);
   const Path & getDownloadPath() const;
   void setDownloadPath(const Path &);
   static std::shared_ptr<LocalFileList> getLocalFileList(const Path& path);
@@ -97,8 +101,10 @@ private:
   std::map<int, Core::BinaryData> content;
   LocalDownload * getAvailableLocalDownload();
   LocalUpload * getAvailableLocalUpload();
+  LocalMemoryUpload * getAvailableLocalMemoryUpload();
   std::list<LocalDownload *> localdownloads;
   std::list<LocalUpload *> localuploads;
+  std::list<LocalMemoryUpload *> localmemoryuploads;
   std::map<int, LocalStorageRequestData *> readyrequests;
   Path temppath;
   Path downloadpath;
