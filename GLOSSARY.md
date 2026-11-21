@@ -48,6 +48,12 @@ _Avoid_: missed file
 Share of the release's files already present on a given site (any racer's uploads count).
 _Avoid_: progress, completeness
 
+### Gather jobs
+
+**Gather job**:
+A release pulled from multiple source sites to a local destination, all sources that have release files serving in parallel, complete only when every sfv file is CRC-verified locally and the nfo is present.
+_Avoid_: pull job, collect job, multidownload
+
 ### Transfers
 
 **In-memory transfer**:
